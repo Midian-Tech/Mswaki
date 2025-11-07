@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Driver Leave Requests{% endblock %}
+{% block body_role %}driver{% endblock %}
+
+{% block sidebar %}
+<nav class="side-nav">
+  <a href="{{ url_for('routes.driver_dashboard') }}" class="side-link">Overview</a>
+  <a href="{{ url_for('routes.report_maintenance') }}" class="side-link">Report Maintenance</a>
+  <a href="{{ url_for('routes.driver_daily_collection') }}" class="side-link">Daily Collection</a>
+  <a href="{{ url_for('routes.driver_leave_requests') }}" class="side-link active">Leave Requests</a>
+</nav>
+{% endblock %}
+
+{% block content %}
+<header class="dashboard-header">
+  <h1>Leave Requests</h1>
+  <p class="muted">Submit and view your leave requests.</p>
+</header>
+
+<section class="card">
+  <h2>Submit a New Leave Request</h2>
+  <form method="POST" action="{{ url_for('routes.driver_leave_requests') }}" class="form-grid">
+
+    <div class="form-group">
+      <label for="start_date">Start Date</label>
+      <input type="date" id="start_date" name="start_date" min="{{ today }}" required>
+    </div>
+
+    <div class="form-group">
+      <label for="end_date">End Date</label>
+      <input type="date" id="end_date" name="end_date" min="{{ today }}" required>
+    </div>
+
+    <div class="form-group">
+      <label for="leave_type">Leave Type</label>
+      <select id="leave_type" name="leave_type" required>
+        <option value="">Select Type</option>
+        <option value="Sick Leave">Sick Leave</option>
+        <option value="Casual Leave">Casual Leave</option>
+        <option value="Annual Leave">Annual Leave</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+
+    <div class="form-group col-span-2">
+      <label for="reason">Reason</label>
+      <textarea id="reason" name="reason" rows="3" placeholder="Explain the reason for your leave..." required></textarea>
+    </div>
+
+    <button type="submit" class="btn primary mt-3">Submit Request</button>
+  </form>
+</section>
+
+<section class="card mt-6">
+  <h2>My Leave Requests</h2>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Date Requested</th>
+        <th>Start</th>
+        <th>End</th>
+        <th>Type</th>
+        <th>Reason</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for leave in leave_requests %}
+      <tr>
+        <td>{{ leave.request_date.strftime('%Y-%m-%d') }}</td>
+        <td>{{ leave.start_date.strftime('%Y-%m-%d') }}</td>
+        <td>{{ leave.end_date.strftime('%Y-%m-%d') }}</td>
+        <td>{{ leave.leave_type }}</td>
+        <td>{{ leave.reason }}</td>
+        <td>
+          {% if leave.status == 'Pending' %}
+            <span class="badge warning">Pending</span>
+          {% elif leave.status == 'Approved' %}
+            <span class="badge success">Approved</span>
+          {% else %}
+            <span class="badge danger">Rejected</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="muted">No leave requests yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Misbehavior Reports{% endblock %}
+{% block body_role %}admin{% endblock %}
+
+{% block content %}
+<h1>Passenger Misbehavior Reports</h1>
+<p>Review reports submitted by passengers regarding driver behavior.</p>
+
+<div class="card">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Passenger</th>
+        <th>Driver ID</th>
+        <th>Description</th>
+        <th>Date Reported</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for report in reports %}
+      <tr>
+        <td>{{ report.id }}</td>
+        <td>{{ user_dict.get(report.user_id, 'Unknown') }}</td>
+        <td>{{ report.driver_id }}</td>
+        <td>{{ report.description }}</td>
+        <td>{{ report.date_reported.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td>{{ report.status }}</td>
+        <td>
+          <form method="POST" action="{{ url_for('routes.resolve_report', report_id=report.id) }}">
+            <button type="submit" class="btn small">Mark Resolved</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="text-center">No reports available.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

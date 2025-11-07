@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Mswaki — Owner Dashboard{% endblock %}
+{% block body_role %}admin{% endblock %}
+
+{% block sidebar %}
+<nav class="side-nav" aria-label="Admin menu">
+  <a class="side-link" href="{{ url_for('routes.admin_dashboard') }}">Overview</a>
+  <a class="side-link" href="{{ url_for('routes.admin_finance') }}">Finances</a>
+  <a class="side-link" href="{{ url_for('routes.admin_maintenance') }}">Maintenance</a>
+  <a class="side-link" href="{{ url_for('routes.admin_bookings') }}">Bookings</a>
+  <a class="side-link" href="{{ url_for('routes.admin_drivers') }}">Drivers</a>
+  <a class="side-link" href="{{ url_for('routes.admin_settings') }}">Settings</a>
+  <li><a href="{{ url_for('routes.admin_misbehavior_reports') }}">Misbehavior Reports</a></li>
+
+</nav>
+{% endblock %}
+
+{% block content %}
+<header class="vstack" style="gap:6px; margin-bottom:16px;">
+  <div class="hstack" style="justify-content:space-between; align-items:center;">
+    <div>
+      <h1 style="margin:0; font-size:1.25rem;">Owner Dashboard</h1>
+      <p style="margin:0; color:var(--muted); font-size:0.95rem;">Overview of revenue, maintenance costs and bookings</p>
+    </div>
+
+    <div class="hstack">
+      <button class="btn" id="export-btn">Export CSV</button>
+      <button class="btn secondary" id="filter-btn">Filter</button>
+    </div>
+  </div>
+</header>
+
+<section aria-labelledby="key-stats" class="card" style="margin-bottom:12px;">
+  <h2 id="key-stats" class="sr-only">Key statistics</h2>
+  <div class="stats-grid" style="gap:12px;">
+    <div class="stat card">
+      <div class="hstack" style="justify-content:space-between;">
+        <div>
+          <div style="color:var(--muted); font-weight:700;">Today's Revenue</div>
+          <div style="font-size:1.25rem; font-weight:800;">KES {{ stats.today_revenue }}</div>
+        </div>
+        <div style="text-align:right; color:var(--muted);">
+          <small style="display:block;">Trips</small>
+          <strong>{{ stats.today_trips }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat card">
+      <div style="color:var(--muted); font-weight:700;">Monthly Profit</div>
+      <div style="font-size:1.25rem; font-weight:800;">KES {{ stats.month_profit }}</div>
+      <div style="color:var(--muted); margin-top:6px;">Maintenance: KES {{ stats.month_maintenance }}</div>
+    </div>
+
+    <div class="stat card">
+      <div style="color:var(--muted); font-weight:700;">Active Vehicles</div>
+      <div style="font-size:1.25rem; font-weight:800;">{{ stats.active_vehicles }}</div>
+      <div style="color:var(--muted); margin-top:6px;">On leave: {{ stats.vehicles_on_leave }}</div>
+    </div>
+
+    <div class="stat card">
+      <div style="color:var(--muted); font-weight:700;">Pending Leave Requests</div>
+      <div style="font-size:1.25rem; font-weight:800;">{{ stats.pending_leaves }}</div>
+    </div>
+  </div>
+</section>
+
+<section class="card" aria-labelledby="revenue-chart" style="margin-bottom:12px;">
+  <h3 id="revenue-chart" style="margin:0 0 12px 0;">Revenue trend</h3>
+  <div style="min-height:220px; display:flex; align-items:center; justify-content:center; color:var(--muted);">
+    <canvas id="revenueChart" width="600" height="220" aria-label="Revenue chart"></canvas>
+  </div>
+</section>
+
+<section class="card" aria-labelledby="recent-bookings">
+  <h3 id="recent-bookings" style="margin:0 0 12px 0;">Recent Bookings</h3>
+  <div style="overflow:auto;">
+    <table class="table" role="table" aria-describedby="recent-bookings">
+      <thead>
+        <tr>
+          <th scope="col">Booking ID</th>
+          <th scope="col">User</th>
+          <th scope="col">Route</th>
+          <th scope="col">Date</th>
+          <th scope="col">Amount</th>
+          <th scope="col">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for b in bookings %}
+        <tr>
+          <td>{{ b.id }}</td>
+          <td>{{ b.user_name }}</td>
+          <td>{{ b.route }}</td>
+          <td>{{ b.date }}</td>
+          <td>KES {{ b.amount }}</td>
+          <td>{{ b.status }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

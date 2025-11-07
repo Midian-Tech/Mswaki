@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}System Settings{% endblock %}
+{% block body_role %}admin{% endblock %}
+
+{% block content %}
+<h1>Settings</h1>
+<form method="POST" class="card">
+  <label>Company Name</label>
+  <input type="text" name="company_name" value="Mswaki Transport">
+
+  <label>Contact Email</label>
+  <input type="email" name="contact_email" value="info@mswaki.com">
+
+  <label>Default Fare Rate (KES/km)</label>
+  <input type="number" name="fare_rate" value="25">
+
+  <button type="submit" class="btn">Save Settings</button>
+</form>
+{% endblock %}

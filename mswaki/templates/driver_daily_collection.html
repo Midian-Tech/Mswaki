@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Mswaki — Daily Collection{% endblock %}
+{% block body_role %}driver{% endblock %}
+
+{% block sidebar %}
+<nav class="side-nav">
+  <a href="{{ url_for('routes.driver_dashboard') }}" class="side-link">Overview</a>
+  <a href="{{ url_for('routes.report_maintenance') }}" class="side-link">Report Maintenance</a>
+  <a href="{{ url_for('routes.driver_daily_collection') }}" class="side-link active">Daily Collection</a>
+  <a href="#" class="side-link">Leave Requests</a>
+</nav>
+{% endblock %}
+
+{% block content %}
+<header class="dashboard-header">
+  <h1>Daily Collection</h1>
+  <p class="muted">Record and view your daily trip collections.</p>
+</header>
+
+<section class="card">
+  <h2>Record New Collection</h2>
+  <form method="POST" class="form-grid">
+    <div class="form-group">
+      <label for="date">Date</label>
+      <input type="date" id="date" name="date" value="{{ today }}" required>
+    </div>
+
+    <div class="form-group">
+      <label for="trips">Number of Trips</label>
+      <input type="number" id="trips" name="trips" min="1" required placeholder="e.g. 8">
+    </div>
+
+    <div class="form-group">
+      <label for="amount">Total Amount Collected (KES)</label>
+      <input type="number" id="amount" name="amount" min="0" step="0.01" required placeholder="e.g. 4500">
+    </div>
+
+    <button type="submit" class="btn primary mt-3">Submit Collection</button>
+  </form>
+</section>
+
+<section class="card mt-6">
+  <h2>Recent Collections</h2>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Trips</th>
+        <th>Amount (KES)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in collections %}
+      <tr>
+        <td>{{ c.date.strftime('%Y-%m-%d') }}</td>
+        <td>{{ c.trips }}</td>
+        <td>{{ "{:,.2f}".format(c.amount) }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="3" class="muted">No daily collection records yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

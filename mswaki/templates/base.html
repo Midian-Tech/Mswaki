@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}Mswaki — Dashboard{% endblock %}</title>
+
+  <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}">
+  <meta name="description" content="Mswaki Transport Management System Dashboard">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block head_extra %}{% endblock %}
+</head>
+
+<body class="dashboard-body" data-role="{% block body_role %}default{% endblock %}">
+  <!-- ===== Top Navigation Bar ===== -->
+  <header class="topbar">
+    <div class="brand">
+      <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Mswaki" class="brand-logo">
+      <span class="brand-text">Mswaki</span>
+    </div>
+
+    <div class="user-info">
+      {% if current_user %}
+        <span class="username">👋 Hi, {{ current_user.name }}</span>
+        <a href="{{ url_for('routes.logout') }}" class="logout-btn">Logout</a>
+      {% else %}
+        <a href="{{ url_for('routes.login') }}" class="login-btn">Login</a>
+      {% endif %}
+    </div>
+  </header>
+
+  <!-- ===== Layout Container ===== -->
+  <div class="layout">
+    <!-- ===== Sidebar Navigation ===== -->
+    <aside class="sidebar">
+      {% block sidebar %}
+      {% if session.get('role') == 'driver' %}
+        <nav class="side-nav">
+          <a href="{{ url_for('routes.driver_dashboard') }}" class="side-link">Overview</a>
+          <a href="{{ url_for('routes.report_maintenance') }}" class="side-link">Report Maintenance</a>
+          <a href="#" class="side-link">Daily Collection</a>
+          <a href="{{url_for('routes.driver_leave_requests')}}" class="side-link">Leave Requests</a>
+        </nav>
+      {% elif session.get('role') == 'admin' %}
+        <nav class="side-nav">
+          <a href="{{ url_for('routes.admin_dashboard') }}" class="side-link">Overview</a>
+          <a href="{{ url_for('routes.admin_drivers') }}" class="side-link">Manage Drivers</a>
+          <a href="{{ url_for('routes.add_vehicle') }}" class="side-link">Vehicles</a>
+          <a href="{{ url_for('routes.admin_maintenance') }}" class="side-link">Maintenance</a>
+          <a href="{{ url_for('routes.admin_reports') }}" class="side-link">Reports</a>
+        </nav>
+      {% endif %}
+      {% endblock %}
+    </aside>
+
+    <!-- ===== Main Content ===== -->
+    <main class="main-content">
+      {% block content %}
+      {% endblock %}
+    </main>
+  </div>
+
+  <!-- ===== Footer ===== -->
+  <footer class="footer">
+    <p>&copy; {{ current_year or 2025 }} Mswaki | All Rights Reserved</p>
+  </footer>
+
+  {% block body_extra %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Login — Mswaki{% endblock %}
+
+{% block content %}
+<main class="auth-container">
+  <section class="auth-card">
+    <div class="auth-header">
+      <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Mswaki Logo" class="auth-logo">
+      <h1>Mswaki Login</h1>
+      <p class="muted">Sign in to access your dashboard</p>
+    </div>
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('routes.login') }}" class="auth-form">
+      <div class="form-group">
+        <label for="email">Email address</label>
+        <input type="email" id="email" name="email" placeholder="you@example.com" required>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="Enter password" required>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-full">Sign In</button>
+
+      <p class="muted" style="text-align:center; margin-top:12px;">
+        Don’t have an account?
+        <a href="{{ url_for('routes.register') }}" class="link">Register here</a>
+      </p>
+    </form>
+  </section>
+</main>
+{% endblock %}

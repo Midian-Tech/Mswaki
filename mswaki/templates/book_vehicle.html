@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mswaki — Book Your Ride</title>
+
+  <!-- 🌈 Fonts & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+
+  <style>
+  :root {
+    --primary: #004aad;
+    --accent: #ffd700;
+    --background: #f9fafb;
+    --text-primary: #1e1e1e;
+    --text-muted: #6b7280;
+    --radius: 12px;
+    --shadow: 0 4px 10px rgba(0,0,0,0.1);
+    --transition: all 0.3s ease;
+    --font: "Poppins", "Inter", sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font);
+    background: var(--background);
+    color: var(--text-primary);
+    line-height: 1.6;
+  }
+
+  /* 🌐 NAVBAR */
+  .navbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: #fff;
+    box-shadow: var(--shadow);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 5%;
+  }
+
+  .navbar-brand {
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: var(--primary);
+    text-decoration: none;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+  }
+
+  .nav-links a {
+    text-decoration: none;
+    color: var(--text-primary);
+    font-weight: 500;
+    transition: var(--transition);
+  }
+
+  .nav-links a:hover { color: var(--primary); }
+
+  .btn {
+    padding: 0.7rem 1.3rem;
+    border-radius: var(--radius);
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: var(--transition);
+  }
+
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: #003b8e; }
+
+  .btn-accent { background: var(--accent); color: #000; }
+  .btn-accent:hover { background: #e5c100; }
+
+  /* 🏙️ HERO SECTION */
+  .hero {
+    position: relative;
+    background: linear-gradient(rgba(0,20,60,0.65), rgba(0,20,60,0.75)), url("/static/images/mswaki.jpg") center/cover no-repeat;
+    color: white;
+    text-align: center;
+    padding: 7rem 2rem;
+  }
+
+  .hero h1 {
+    font-size: 2.8rem;
+    margin-bottom: 1rem;
+    animation: fadeInUp 1s ease;
+  }
+
+  .hero p {
+    color: #e5e5e5;
+    max-width: 650px;
+    margin: 0 auto 2rem;
+    font-size: 1.1rem;
+    animation: fadeInUp 1.2s ease;
+  }
+
+  /* 🚗 BOOKING FORM SECTION */
+  .booking-section {
+    padding: 4rem 5%;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .booking-section h2 {
+    font-size: 2rem;
+    color: var(--primary);
+    margin-bottom: 1rem;
+    position: relative;
+  }
+
+  .booking-section h2::after {
+    content: "";
+    width: 60px;
+    height: 4px;
+    background: var(--accent);
+    display: block;
+    margin: 0.5rem auto;
+    border-radius: 4px;
+  }
+
+  form {
+    max-width: 600px;
+    width: 100%;
+    background: #fdfdfd;
+    padding: 2rem;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 1.3rem;
+    animation: fadeInUp 1s ease both;
+  }
+
+  label {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.3rem;
+    display: block;
+  }
+
+  input, select, textarea {
+    padding: 0.9rem;
+    border-radius: var(--radius);
+    border: 1px solid #ccc;
+    font-family: var(--font);
+    font-size: 1rem;
+    width: 100%;
+    transition: var(--transition);
+  }
+
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(0,74,173,0.1);
+    outline: none;
+  }
+
+  textarea {
+    resize: vertical;
+  }
+
+  /* ⚓ FOOTER */
+  .footer {
+    background: var(--primary);
+    color: white;
+    text-align: center;
+    padding: 1.5rem;
+    margin-top: 3rem;
+  }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 768px) {
+    .nav-links { display: none; }
+    .hero h1 { font-size: 2.2rem; }
+    .hero p { font-size: 1rem; }
+    form { padding: 1.5rem; }
+  }
+  </style>
+</head>
+<body>
+
+  <!-- 🌐 NAVBAR -->
+  <nav class="navbar">
+    <a href="{{ url_for('routes.user_dashboard') }}" class="navbar-brand">Mswaki</a>
+    <div class="nav-links">
+      <a href="{{ url_for('routes.user_dashboard') }}">Home</a>
+      <a href="{{ url_for('routes.report_misbehavior') }}">Report</a>
+      <a href="{{ url_for('routes.book_vehicle') }}" class="btn btn-accent">Book</a>
+      {% if current_user.is_authenticated %}
+        <a href="{{ url_for('routes.logout') }}" class="btn btn-primary" style="color:white;">Logout</a>
+      {% else %}
+        <a href="{{ url_for('routes.login') }}" class="btn btn-primary" style="color:white;">Login</a>
+      {% endif %}
+    </div>
+  </nav>
+
+  <!-- 🏙️ HERO -->
+  <section class="hero">
+    <h1>Book Your Ride with <span style="color: var(--accent)">Mswaki</span></h1>
+    <p>Plan your next journey with our reliable drivers and comfortable fleet — safe, fast, and affordable.</p>
+  </section>
+
+  <!-- 🚗 BOOKING FORM -->
+  <section class="booking-section">
+    <h2>Book a Vehicle</h2>
+    <form method="POST" action="{{ url_for('routes.book_vehicle') }}">
+      <div>
+        <label for="vehicle">Select Available Vehicle</label>
+        <select name="vehicle_id" id="vehicle" required>
+          <option value="">-- Select Vehicle --</option>
+          {% for v in available_vehicles %}
+            <option value="{{ v.id }}">{{ v.plate_number }} — Driver: {{ v.driver.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label for="pickup">Pickup Point</label>
+        <input type="text" name="pickup" id="pickup" placeholder="Enter pickup location" required />
+      </div>
+
+      <div>
+        <label for="destination">Destination</label>
+        <input type="text" name="destination" id="destination" placeholder="Enter destination" required />
+      </div>
+
+      <div>
+        <label for="reason">Reason for Hire</label>
+        <textarea name="reason" id="reason" rows="3" placeholder="Business trip, personal travel, etc." required></textarea>
+      </div>
+
+      <button type="submit" class="btn btn-primary">Confirm Booking</button>
+    </form>
+  </section>
+
+  <!--  FOOTER -->
+  <footer class="footer">
+    <p>© {{ current_year or 2025 }} Mswaki Transport. All rights reserved.</p>
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Report Misbehavior | Mswaki</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #f4f6f8;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+
+    header {
+      background-color: #004aad;
+      color: white;
+      padding: 15px 25px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h2 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .nav-links a {
+      color: white;
+      margin-left: 15px;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .nav-links a:hover {
+      text-decoration: underline;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 60px auto;
+      background: white;
+      padding: 30px 40px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 15px;
+      color: #000000;
+    }
+
+    p {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #666;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    label {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 5px;
+    }
+
+    select, textarea {
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 15px;
+      outline: none;
+      transition: 0.2s;
+    }
+
+    select:focus, textarea:focus {
+      border-color: #000000;
+      box-shadow: 0 0 4px rgba(0,77,64,0.3);
+    }
+
+    textarea {
+      resize: none;
+      height: 120px;
+    }
+
+    button {
+      background-color: #000000;
+      color: white;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #000000;
+    }
+
+    .back-link {
+      display: block;
+      text-align: center;
+      margin-top: 25px;
+      color: #000000;
+      font-weight: 500;
+      text-decoration: none;
+    }
+
+    .back-link:hover {
+      text-decoration: underline;
+    }
+
+    footer {
+      text-align: center;
+      padding: 15px;
+      background-color: #004aad;
+      color: white;
+      font-size: 14px;
+      margin-top: 60px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h2>Mswaki </h2>
+    <div class="nav-links">
+      <a href="{{ url_for('routes.user_dashboard') }}">Home</a>
+      <a href="{{ url_for('routes.book_vehicle') }}">Book Vehicle</a>
+      <a href="{{ url_for('routes.logout') }}">Logout</a>
+    </div>
+  </header>
+
+  <div class="container">
+    <h1>Report Misbehavior</h1>
+    <p>Your report will remain <strong>anonymous</strong>. Please provide as many details as possible.</p>
+
+    <form method="POST">
+      <div>
+        <label for="driver_id">Driver Involved</label>
+        <select name="driver_id" id="driver_id">
+          <option value="">-- Select a Driver (optional) --</option>
+          {% for driver in drivers %}
+            <option value="{{ driver.id }}">{{ driver.name }} ({{ driver.email }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label for="vehicle_id">Vehicle Involved</label>
+        <select name="vehicle_id" id="vehicle_id">
+          <option value="">-- Select Vehicle (optional) --</option>
+          {% for vehicle in vehicles %}
+            <option value="{{ vehicle.id }}">{{ vehicle.plate_number }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label for="description">Incident Description</label>
+        <textarea name="description" id="description" placeholder="Describe what happened..." required></textarea>
+      </div>
+
+      <button type="submit">Submit Report</button>
+    </form>
+
+    <a href="{{ url_for('routes.user_dashboard') }}" class="back-link">← Back to Dashboard</a>
+  </div>
+
+  <footer>
+    &copy; {{ current_year or 2025 }} Mswaki Vehicle Management | All Rights Reserved
+  </footer>
+
+</body>
+</html>

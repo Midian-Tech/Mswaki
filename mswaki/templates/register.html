@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Register — Mswaki{% endblock %}
+
+{% block content %}
+<main class="auth-container">
+  <section class="auth-card">
+    <div class="auth-header">
+      <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Mswaki Logo" class="auth-logo">
+      <h1>Create Your Mswaki Account</h1>
+      <p class="muted">Join Mswaki and manage your rides with ease</p>
+    </div>
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('routes.register') }}" class="auth-form">
+      <div class="form-group">
+        <label for="name">Full Name</label>
+        <input type="text" id="name" name="name" placeholder="John Doe" required>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" name="email" placeholder="you@example.com" required>
+      </div>
+
+      <div class="form-group">
+        <label for="role">Register As</label>
+        <select id="role" name="role" required>
+          <option value="">Select Role</option>
+          <option value="passenger">Passenger</option>
+          <option value="admin">Admin</option>
+         
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="Create a password" required>
+      </div>
+
+      <div class="form-group">
+        <label for="confirm_password">Confirm Password</label>
+        <input type="password" id="confirm_password" name="confirm_password" placeholder="Re-enter your password" required>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-full">Create Account</button>
+
+      <p class="muted text-center mt-1">
+        Already have an account?
+        <a href="{{ url_for('routes.login') }}" class="link">Sign in here</a>
+      </p>
+    </form>
+  </section>
+</main>
+{% endblock %}

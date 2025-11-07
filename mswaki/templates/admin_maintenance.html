@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Maintenance Logs{% endblock %}
+{% block body_role %}admin{% endblock %}
+
+{% block content %}
+<h1>Maintenance Reports</h1>
+<p>View and manage maintenance submissions from drivers.</p>
+
+<div class="card">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Vehicle</th>
+        <th>Driver</th>
+        <th>Description</th>
+        <th>Cost (Ksh)</th>
+        <th>Date Reported</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in maintenance %}
+      <tr>
+        <td>{{ item.id }}</td>
+        <td>{{ item.plate_number }}</td>
+        <td>{{ item.driver_name }}</td>
+        <td>{{ item.description }}</td>
+        <td>{{ "%.2f"|format(item.cost) }}</td>
+        <td>{{ item.date_reported.strftime('%Y-%m-%d') }}</td>
+      </tr>
+      {% endfor %}
+      {% if maintenance|length == 0 %}
+      <tr>
+        <td colspan="6" class="text-center">No maintenance reports found.</td>
+      </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

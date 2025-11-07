@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Admin Reports{% endblock %}
+
+{% block sidebar %}
+<nav class="side-nav">
+  <a href="{{ url_for('routes.admin_dashboard') }}" class="side-link">Dashboard</a>
+  <a href="{{ url_for('routes.admin_bookings') }}" class="side-link">Bookings</a>
+  <a href="{{ url_for('routes.admin_drivers') }}" class="side-link">Drivers</a>
+  <a href="{{ url_for('routes.admin_maintenance') }}" class="side-link">Maintenance</a>
+  <a href="{{ url_for('routes.admin_reports') }}" class="side-link active">Reports</a>
+</nav>
+{% endblock %}
+
+{% block content %}
+<header class="dashboard-header">
+  <h1>Admin Reports Overview</h1>
+  <p class="muted">Comprehensive statistics about your fleet and users.</p>
+</header>
+
+<section class="grid grid-cols-2 gap-4 mt-6">
+  <div class="card">
+    <h2>Total Users</h2>
+    <p class="stat">{{ stats.total_users }}</p>
+  </div>
+
+  <div class="card">
+    <h2>Total Drivers</h2>
+    <p class="stat">{{ stats.total_drivers }}</p>
+  </div>
+
+  <div class="card">
+    <h2>Total Vehicles</h2>
+    <p class="stat">{{ stats.total_vehicles }}</p>
+  </div>
+
+  <div class="card">
+    <h2>Total Bookings</h2>
+    <p class="stat">{{ stats.total_bookings }}</p>
+  </div>
+
+  <div class="card">
+    <h2>Maintenance Cases</h2>
+    <p class="stat">{{ stats.maintenance }}</p>
+  </div>
+
+  <div class="card">
+    <h2>Pending Misbehavior Reports</h2>
+    <p class="stat">{{ stats.unresolved_reports }}</p>
+  </div>
+</section>
+{% endblock %}

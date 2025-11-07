@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Report Maintenance{% endblock %}
+{% block body_role %}driver{% endblock %}
+
+{% block sidebar %}
+<nav class="side-nav">
+  <a href="{{ url_for('routes.driver_dashboard') }}" class="side-link">Overview</a>
+  <a href="{{ url_for('routes.report_maintenance') }}" class="side-link active">Report Maintenance</a>
+  <a href="#" class="side-link">Daily Collection</a>
+  <a href="#" class="side-link">Leave Requests</a>
+</nav>
+{% endblock %}
+
+{% block content %}
+<header class="dashboard-header">
+  <h1>Report Maintenance</h1>
+  <p class="muted">Submit a new maintenance request for your assigned vehicle.</p>
+</header>
+
+<section class="card">
+  <form method="POST" class="form">
+    <label for="vehicle_id">Select Vehicle</label>
+    <select name="vehicle_id" id="vehicle_id" required>
+      <option value="">-- Select Vehicle --</option>
+      {% for v in vehicles %}
+        <option value="{{ v.id }}">{{ v.plate_number }}</option>
+      {% endfor %}
+    </select>
+
+    <label for="description">Issue Description</label>
+    <textarea name="description" id="description" rows="4" placeholder="Describe the issue..." required></textarea>
+
+    <button type="submit" class="btn primary">Submit Report</button>
+  </form>
+</section>
+{% endblock %}

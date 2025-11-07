@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Finance Reports{% endblock %}
+{% block body_role %}admin{% endblock %}
+
+{% block content %}
+<h1>Finance Overview</h1>
+<p>Summary of financial statistics.</p>
+
+<div class="card">
+  <h3>Revenue Breakdown</h3>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Month</th>
+        <th>Total Revenue</th>
+        <th>Expenses</th>
+        <th>Profit</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>October</td><td>KES 385,000</td><td>KES 45,000</td><td>KES 340,000</td></tr>
+      <tr><td>September</td><td>KES 360,000</td><td>KES 55,000</td><td>KES 305,000</td></tr>
+    </tbody>
+  </table>
+</div>
+{% endblock %}
