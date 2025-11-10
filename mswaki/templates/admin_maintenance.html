@@ -14,8 +14,10 @@
         <th>Vehicle</th>
         <th>Driver</th>
         <th>Description</th>
-        <th>Cost (Ksh)</th>
+        <th>Reported Cost (Ksh)</th>
         <th>Date Reported</th>
+        <th>Status</th>
+        <th>Action</th>
       </tr>
     </thead>
     <tbody>
@@ -27,11 +29,22 @@
         <td>{{ item.description }}</td>
         <td>{{ "%.2f"|format(item.cost) }}</td>
         <td>{{ item.date_reported.strftime('%Y-%m-%d') }}</td>
+        <td>{{ item.status }}</td>
+        <td>
+          {% if item.status != "Completed" %}
+          <form method="POST" action="{{ url_for('routes.complete_maintenance', maintenance_id=item.id) }}">
+            <input type="number" name="actual_cost" step="0.01" placeholder="Enter actual cost" required>
+            <button type="submit" class="btn primary">Mark Complete</button>
+          </form>
+          {% else %}
+           Completed
+          {% endif %}
+        </td>
       </tr>
       {% endfor %}
       {% if maintenance|length == 0 %}
       <tr>
-        <td colspan="6" class="text-center">No maintenance reports found.</td>
+        <td colspan="8" class="text-center">No maintenance reports found.</td>
       </tr>
       {% endif %}
     </tbody>

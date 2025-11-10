@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Admin — Bookings{% endblock %}
+{% block body_role %}admin{% endblock %}
+
+{% block sidebar %}
+<nav class="side-nav">
+   <a class="side-link" href="{{ url_for('routes.admin_dashboard') }}">Overview</a>
+  <a class="side-link" href="{{ url_for('routes.admin_finance') }}">Finances</a>
+  <a class="side-link" href="{{ url_for('routes.admin_maintenance') }}">Maintenance</a>
+  <a class="side-link" href="{{ url_for('routes.admin_bookings') }}">Bookings</a>
+  <a class="side-link" href="{{ url_for('routes.admin_drivers') }}">Drivers</a>
+  <a class="side-link" href="{{ url_for('routes.admin_settings') }}">Settings</a>
+  <li><a href="{{ url_for('routes.admin_misbehavior_reports') }}">Misbehavior Reports</a></li>
+
+</nav>
+{% endblock %}
+
+{% block content %}
+<header class="dashboard-header">
+  <h1>All Bookings</h1>
+  <p class="muted">Monitor, approve, or reject bookings made by users.</p>
+</header>
+
+<section class="card">
+  {% if bookings %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>User</th>
+        <th>Vehicle</th>
+        <th>Pickup</th>
+        <th>Destination</th>
+        <th>Reason</th>
+        <th>Status</th>
+        <th>Booking Date</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for booking in bookings %}
+      <tr>
+        <td>{{ booking.id }}</td>
+        <td>{{ booking.user.name if booking.user else 'N/A' }}</td>
+        <td>{{ booking.vehicle.plate_number if booking.vehicle else 'N/A' }}</td>
+        <td>{{ booking.pickup }}</td>
+        <td>{{ booking.destination }}</td>
+        <td>{{ booking.reason }}</td>
+        <td>
+          <span class="badge {{ 'success' if booking.status == 'approved' else 'danger' if booking.status == 'rejected' else 'warning' }}">
+            {{ booking.status|capitalize }}
+          </span>
+        </td>
+        <td>{{ booking.booking_date.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td>
+          {% if booking.status == 'pending' %}
+            <form action="{{ url_for('routes.admin_update_booking', booking_id=booking.id) }}" method="POST" style="display:inline;">
+              <button name="action" value="approve" class="btn success small">Approve</button>
+              <button name="action" value="reject" class="btn danger small">Reject</button>
+            </form>
+          {% else %}
+            <em>No actions</em>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p class="muted center">No bookings have been made yet.</p>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block extra_styles %}
+<style>
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.data-table th, .data-table td {
+  padding: 0.8rem;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+}
+
+.data-table th {
+  background: #f3f4f6;
+  font-weight: 600;
+}
+
+.badge {
+  padding: 0.3rem 0.7rem;
+  border-radius: 8px;
+  color: white;
+  font-size: 0.85rem;
+}
+.badge.success { background: #16a34a; }
+.badge.warning { background: #f59e0b; }
+.badge.danger { background: #dc2626; }
+
+.btn.small {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.85rem;
+  border-radius: 6px;
+}
+.btn.success { background: #16a34a; color: white; border: none; }
+.btn.danger { background: #dc2626; color: white; border: none; }
+
+.btn.success:hover { background: #15803d; }
+.btn.danger:hover { background: #b91c1c; }
+
+.center { text-align: center; margin-top: 2rem; }
+</style>
+{% endblock %}

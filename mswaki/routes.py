@@ -11,6 +11,10 @@ from mswaki.models import User, Booking, Vehicle, Maintenance, MisbehaviorReport
 from mswaki.models import LeaveRequest
 from functools import wraps
 from flask import session, flash, redirect, url_for
+from sqlalchemy import extract, func
+from mswaki.models import DailyCollection
+import csv
+from flask import make_response
 # ============================================================
 # BLUEPRINT SETUP
 # ============================================================
@@ -129,11 +133,7 @@ def admin_dashboard():
     bookings = Booking.query.order_by(Booking.created_at.desc()).limit(10).all()
     return render_template("admin_dashboard.html", stats=stats, bookings=bookings)
 
-@routes.route("/admin/bookings")
-@login_required(role="admin")
-def admin_bookings():
-    bookings = Booking.query.order_by(Booking.created_at.desc()).all()
-    return render_template("admin_bookings.html", bookings=bookings)
+
 
 @routes.route("/admin/drivers")
 @login_required(role="admin")
@@ -145,8 +145,74 @@ def admin_drivers():
 @routes.route("/admin/finance")
 @login_required(role="admin")
 def admin_finance():
-    # Placeholder for finance logic
-    return render_template("admin_finance.html")
+    # --- Revenue from driver collections ---
+    collections = (
+        db.session.query(
+            DailyCollection.date,
+            User.name.label("driver_name"),
+            Vehicle.plate_number.label("vehicle_plate"),
+            DailyCollection.amount
+        )
+        .join(User, User.id == DailyCollection.driver_id)
+        .join(Vehicle, Vehicle.driver_id == User.id)
+        .all()
+    )
+
+    # --- Group revenue by month ---
+    monthly_revenue = {}
+    for c in collections:
+        month = c.date.strftime("%B %Y")
+        monthly_revenue.setdefault(month, 0)
+        monthly_revenue[month] += c.amount
+
+    # --- Total expenses (from maintenance) ---
+    total_expenses = db.session.query(db.func.sum(Maintenance.cost)).scalar() or 0.0
+
+    # --- Total revenue ---
+    total_revenue = sum(monthly_revenue.values())
+
+    # --- Profit/Loss ---
+    profit = total_revenue - total_expenses
+
+    # Prepare chart data as a list of dicts
+    chart_data = [{"month": str(m), "revenue": float(r)} for m, r in monthly_revenue.items()]
+    
+    # Sort the data by month if needed (optional)
+    chart_data.sort(key=lambda x: datetime.strptime(x['month'], '%B %Y'))
+    
+    return render_template(
+        "admin_finance.html",
+        collections=collections,
+        monthly_revenue=monthly_revenue,
+        total_revenue=total_revenue,
+        total_expenses=total_expenses,
+        profit=profit,
+        chart_data=chart_data  # Pass the Python list directly
+    )
+@routes.route("/admin/finance/download")
+@login_required(role="admin")
+def download_finance_report():
+    collections = (
+        db.session.query(
+            DailyCollection.date,
+            User.name.label("driver_name"),
+            Vehicle.plate_number.label("vehicle_plate"),
+            DailyCollection.amount
+        )
+        .join(User, User.id == DailyCollection.driver_id)
+        .join(Vehicle, Vehicle.driver_id == User.id)
+        .all()
+    )
+
+    output = make_response()
+    writer = csv.writer(output)
+    writer.writerow(["Date", "Driver", "Vehicle", "Amount (KES)"])
+    for c in collections:
+        writer.writerow([c.date, c.driver_name, c.vehicle_plate, c.amount])
+
+    output.headers["Content-Disposition"] = "attachment; filename=finance_report.csv"
+    output.headers["Content-Type"] = "text/csv"
+    return output
 
 @routes.route("/admin/maintenance")
 @login_required(role="admin")
@@ -160,6 +226,44 @@ def admin_maintenance():
             item.driver_name = "Unassigned"
             item.plate_number = "N/A"
     return render_template("admin_maintenance.html", maintenance=maintenance)
+@routes.route("/admin/complete_maintenance/<int:maintenance_id>", methods=["POST"])
+@login_required(role="admin")
+def complete_maintenance(maintenance_id):
+    """Mark a maintenance report as completed and deduct from revenue"""
+    maintenance = Maintenance.query.get_or_404(maintenance_id)
+    actual_cost = request.form.get("actual_cost")
+
+    try:
+        actual_cost = float(actual_cost)
+    except ValueError:
+        flash("Invalid cost entered.", "danger")
+        return redirect(url_for("routes.admin_maintenance"))
+
+    # Update maintenance record
+    maintenance.cost = actual_cost
+    maintenance.status = "Completed"
+    db.session.commit()
+
+    # Optionally deduct from revenue / update finance table
+    # Assuming you have a total revenue or daily_collection table
+    # Example: update a RevenueSummary table
+    # = RevenueSummary.query.first()
+    #revenue_summary.expenses += actual_cost
+    #.profit = revenue_summary.revenue - revenue_summary.expenses
+    #db.session.commit()
+    #return render_template(
+   # "admin_finance.html",
+   # total_revenue=total_revenue,
+   # total_expenses=total_expenses,
+    #=profit,
+   # collections=daily_collections
+#)
+
+
+    flash(f"Maintenance {maintenance.id} marked as completed and cost updated.", "success")
+    return redirect(url_for("routes.admin_maintenance"))
+
+
 
 @routes.route("/admin/settings", methods=["GET", "POST"])
 @login_required(role="admin")
@@ -284,6 +388,41 @@ def admin_reports():
 
     return render_template("admin_reports.html", stats=stats)
 
+@routes.route("/admin/update_booking/<int:booking_id>", methods=["POST"])
+@login_required(role="admin")
+def admin_update_booking(booking_id):
+    """Allow admin to approve or reject a booking"""
+    booking = Booking.query.get_or_404(booking_id)
+    action = request.form.get("action")
+
+    if action == "approve":
+        booking.status = "approved"
+        flash(f"Booking #{booking.id} has been approved.", "success")
+    elif action == "reject":
+        booking.status = "rejected"
+        flash(f"Booking #{booking.id} has been rejected.", "danger")
+    else:
+        flash("Invalid action.", "warning")
+
+    db.session.commit()
+    return redirect(url_for("routes.admin_bookings"))
+@routes.route("/admin/bookings", methods=["GET"])
+@login_required(role="admin")
+def admin_bookings():
+    """
+    Admin view — displays all vehicle bookings in the system.
+    """
+    # Fetch all bookings, most recent first
+    bookings = (
+        Booking.query
+        .order_by(Booking.booking_date.desc())
+        .all()
+    )
+
+    return render_template("admin_bookings.html", bookings=bookings)
+
+
+
 # ============================================================
 # DRIVER ROUTES
 # ============================================================
@@ -314,16 +453,23 @@ def report_maintenance():
     if request.method == "POST":
         vehicle_id = request.form.get("vehicle_id")
         description = request.form.get("description")
+        cost = request.form.get("cost", 0.0)  # new field
 
         if not (vehicle_id and description):
             flash("All fields are required.", "danger")
             return redirect(url_for("routes.report_maintenance"))
 
+        try:
+            cost = float(cost)
+        except ValueError:
+            flash("Please enter a valid numeric value for cost.", "danger")
+            return redirect(url_for("routes.report_maintenance"))
+
         maintenance = Maintenance(
             vehicle_id=vehicle_id,
             description=description,
+            cost=cost,  # include cost
             date_reported=datetime.now(),
-            status="Ongoing"
         )
         db.session.add(maintenance)
 
@@ -451,62 +597,37 @@ def user_dashboard():
 
 
 @routes.route("/book_vehicle", methods=["GET", "POST"])
-@login_required()
+@login_required
 def book_vehicle():
-    """
-    Allows a logged-in user to book a vehicle.
-    Shows only available vehicles not under maintenance or already booked.
-    """
     if request.method == "POST":
-        # --- Get form data ---
         vehicle_id = request.form.get("vehicle_id")
         pickup = request.form.get("pickup")
         destination = request.form.get("destination")
         reason = request.form.get("reason")
 
-        # --- Validate input ---
         if not all([vehicle_id, pickup, destination, reason]):
-            flash("Please fill in all fields before submitting.", "danger")
+            flash("Please fill in all fields.", "danger")
             return redirect(url_for("routes.book_vehicle"))
 
         try:
-            # --- Create a new booking record ---
             booking = Booking(
                 user_id=current_user.id,
                 vehicle_id=int(vehicle_id),
-                pickup=pickup.strip(),
-                destination=destination.strip(),
-                reason=reason.strip(),
-                booking_date=datetime.utcnow(),
-                created_at=datetime.utcnow(),
+                pickup=pickup,
+                destination=destination,
+                reason=reason,
                 status="Pending",
+                booking_date=datetime.utcnow()
             )
-
             db.session.add(booking)
             db.session.commit()
-
-            flash(" Booking request submitted successfully!", "success")
+            flash("Booking request submitted successfully!", "success")
             return redirect(url_for("routes.user_dashboard"))
-
         except Exception as e:
             db.session.rollback()
-            flash(f" Error while saving booking: {str(e)}", "danger")
-            return redirect(url_for("routes.book_vehicle"))
+            flash(f"Error while saving booking: {e}", "danger")
 
-    # --- Prepare list of available vehicles ---
-    maintenance_ids = [m.vehicle_id for m in Maintenance.query.all()]
-    active_booking_ids = [
-        b.vehicle_id for b in Booking.query.filter(
-            Booking.status.in_(["Pending", "Approved"])
-        ).all()
-    ]
-    excluded_ids = set(maintenance_ids + active_booking_ids)
-
-    available_vehicles = Vehicle.query.filter(
-        Vehicle.status == "available",
-        ~Vehicle.id.in_(excluded_ids)
-    ).all()
-
+    # Load available vehicles logic...
     return render_template("book_vehicle.html", available_vehicles=available_vehicles)
 
 @routes.route("/user/profile", methods=["GET", "POST"])

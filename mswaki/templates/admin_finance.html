@@ -1,26 +1,173 @@
 {% extends "base.html" %}
-{% block title %}Finance Reports{% endblock %}
+{% block title %}Finance Dashboard{% endblock %}
 {% block body_role %}admin{% endblock %}
 
 {% block content %}
-<h1>Finance Overview</h1>
-<p>Summary of financial statistics.</p>
+<header class="dashboard-header">
+  <h1>Finance Overview</h1>
+  <p class="muted">Monthly revenue, expenses, and profits.</p>
+</header>
 
-<div class="card">
-  <h3>Revenue Breakdown</h3>
+<section class="grid grid-cols-3 gap-4 mb-6">
+  <div class="card">
+    <h3>Total Revenue</h3>
+    <p class="text-2xl text-green-600">KES {{ "%.2f"|format(total_revenue) }}</p>
+  </div>
+  <div class="card">
+    <h3>Total Expenses</h3>
+    <p class="text-2xl text-red-600">KES {{ "%.2f"|format(total_expenses) }}</p>
+  </div>
+  <div class="card">
+    <h3>Profit / Loss</h3>
+    <p class="text-2xl {% if profit >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+      KES {{ "%.2f"|format(profit) }}
+    </p>
+  </div>
+</section>
+
+<section class="card mb-6">
+  <h3>Revenue Breakdown by Month</h3>
   <table class="table">
     <thead>
       <tr>
         <th>Month</th>
         <th>Total Revenue</th>
-        <th>Expenses</th>
-        <th>Profit</th>
       </tr>
     </thead>
     <tbody>
-      <tr><td>October</td><td>KES 385,000</td><td>KES 45,000</td><td>KES 340,000</td></tr>
-      <tr><td>September</td><td>KES 360,000</td><td>KES 55,000</td><td>KES 305,000</td></tr>
+      {% for month, revenue in monthly_revenue.items() %}
+      <tr><td>{{ month }}</td><td>KES {{ "%.2f"|format(revenue) }}</td></tr>
+      {% else %}
+      <tr><td colspan="2" class="text-center">No revenue data</td></tr>
+      {% endfor %}
     </tbody>
   </table>
-</div>
+</section>
+
+<section class="card mb-6">
+  <h3>Driver & Vehicle Collections</h3>
+  <a href="{{ url_for('routes.download_finance_report') }}" class="btn primary mb-3">⬇️ Download CSV</a>
+  <table class="table">
+    <thead>
+      <tr><th>Date</th><th>Driver</th><th>Vehicle</th><th>Amount (KES)</th></tr>
+    </thead>
+    <tbody>
+      {% for c in collections %}
+      <tr>
+        <td>{{ c.date }}</td>
+        <td>{{ c.driver_name }}</td>
+        <td>{{ c.vehicle_plate }}</td>
+        <td>{{ "%.2f"|format(c.amount) }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="text-center">No collection records</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="card">
+  <h3>Revenue Chart</h3>
+  <canvas id="revenueChart" height="100"></canvas>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const chartElement = document.getElementById("revenueChart");
+    if (!chartElement) {
+      console.error("Chart element not found!");
+      return;
+    }
+    
+    const ctx = chartElement.getContext("2d");
+    
+    try {
+      // Debug: Log the raw template data
+      const rawData = '{{ chart_data|tojson|safe }}';
+      console.log("Raw template data:", rawData);
+      
+      // Parse the JSON data
+      let chartData;
+      try {
+        chartData = JSON.parse(rawData);
+        console.log("Parsed chart data:", chartData);
+      } catch (parseError) {
+        console.error("Error parsing chart data:", parseError);
+        throw new Error("Invalid chart data format");
+      }
+      
+      if (!Array.isArray(chartData)) {
+        console.error("Chart data is not an array:", chartData);
+        throw new Error("Expected chart data to be an array");
+      }
+      
+      if (chartData.length > 0) {
+        // Extract months and revenues
+        const months = chartData.map(function(item) { return item.month; });
+        const revenues = chartData.map(function(item) { return item.revenue; });
+        
+        new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: months,
+            datasets: [{
+              label: "Revenue (KES)",
+              data: revenues,
+              backgroundColor: "rgba(54, 162, 235, 0.7)",
+              borderColor: "rgba(54, 162, 235, 1)",
+              borderWidth: 1,
+              borderRadius: 4,
+              barPercentage: 0.8
+            }]
+          },
+          options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: function(value) {
+              return 'KES ' + value.toLocaleString();
+            }
+          },
+          grid: {
+            display: true,
+            color: 'rgba(0, 0, 0, 0.05)'
+          }
+        },
+        x: {
+          grid: {
+            display: false
+          }
+        }
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return 'KES ' + context.parsed.y.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+          }
+        }
+      }
+        });
+      } else {
+        console.log("No chart data available");
+        chartElement.innerHTML = "<p class='text-center p-4 text-gray-500'>No revenue data available for chart</p>";
+      }
+    } catch (error) {
+      console.error("Error initializing chart:", error);
+      const errorMessage = error.message || 'Unknown error occurred';
+      console.error("Error details:", error);
+      chartElement.innerHTML = `
+        <div class='p-4 text-center'>
+          <p class='text-red-500 font-medium'>Error loading chart data</p>
+          <p class='text-sm text-gray-600 mt-1'>${errorMessage}</p>
+          <p class='text-xs text-gray-500 mt-2'>Check console for details (F12 > Console)</p>
+        </div>`;
+    }
+  });
+</script>
 {% endblock %}
