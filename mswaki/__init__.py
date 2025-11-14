@@ -2,56 +2,42 @@ import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from flask_migrate import Migrate
 
-# Initialize extensions (but not bound to app yet)
+# Global extension instance (IMPORTANT!)
 db = SQLAlchemy()
 login_manager = LoginManager()
-
+migrate = Migrate()
 
 def create_app():
     """Application factory for the Mswaki system."""
     app = Flask(__name__)
 
-    # -------------------------
-    # 🔐 Basic Configurations
-    # -------------------------
-    app.config['SECRET_KEY'] = 'your-secret-key'  # Change this to an environment variable in production
-
-    # Build absolute path to the database file in /instance/mswaki.db
+    # Config
+    app.config['SECRET_KEY'] = 'your-secret-key'
     base_dir = os.path.abspath(os.path.dirname(__file__))
     db_path = os.path.join(base_dir, '..', 'instance', 'mswaki.db')
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-    # -------------------------
-    # 🔧 Initialize Extensions
-    # -------------------------
+    # Initialize extensions
     db.init_app(app)
+    migrate.init_app(app, db)   # <-- FIXED!
     login_manager.init_app(app)
-    login_manager.login_view = 'routes.login'  # Redirect here if user not logged in
+    login_manager.login_view = 'routes.login'
 
-    # -------------------------
-    # 👤 User Loader (for Flask-Login)
-    # -------------------------
-    from mswaki.models import User  # Import here to avoid circular import
-
+    # User loader
+    from mswaki.models import User
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
 
-    # -------------------------
-    # 🧭 Register Blueprints
-    # -------------------------
+    # Register blueprints
     from mswaki.routes import routes
     app.register_blueprint(routes)
 
-    # -------------------------
-    # 🗃️ Create database tables (only if they don't exist)
-    # -------------------------
+    # Create DB tables
     with app.app_context():
         db.create_all()
 
-    # -------------------------
-    # ✅ Return the configured app
-    # -------------------------
     return app

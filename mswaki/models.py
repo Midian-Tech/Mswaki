@@ -16,6 +16,7 @@ class User(db.Model, UserMixin):
     def __repr__(self):
         return f"<User {self.email}>"
     rating = db.Column(db.Float, default=0.0)
+    status = db.Column(db.String(10), default='active') 
 
 
 
@@ -25,37 +26,51 @@ class Vehicle(db.Model):
     status = db.Column(db.String(20), default="available")
     driver_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
 
-    # ✅ fix: refer to User model instead of non-existent Driver
     driver = db.relationship("User", backref="vehicles", lazy=True)
 
     last_maintenance = db.Column(db.DateTime, nullable=True)
 
     def __repr__(self):
         return f"<Vehicle {self.plate_number}>"
-
 class Booking(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-    vehicle_id = db.Column(db.Integer, db.ForeignKey("vehicle.id"), nullable=False)
-    pickup = db.Column(db.String(120), nullable=False)
-    destination = db.Column(db.String(120), nullable=False)
-    route = db.Column(db.String(255), nullable=True)  # optional
-    reason = db.Column(db.Text, nullable=False)
-    status = db.Column(db.String(50), default="Pending")
-    booking_date = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    vehicle_id = db.Column(db.Integer, db.ForeignKey('vehicle.id'))
+    pickup = db.Column(db.String(100))
+    destination = db.Column(db.String(100))
+    route = db.Column(db.String(100))
+    reason = db.Column(db.String(200))
+    status = db.Column(db.String(50))
+    booking_date = db.Column(db.DateTime) 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
+
+    # Add these relationships
+    user = db.relationship("User", backref="bookings")
+    vehicle = db.relationship("Vehicle", backref="bookings")
+
+
 class Maintenance(db.Model):
+    __tablename__ = "maintenance"
+
     id = db.Column(db.Integer, primary_key=True)
     vehicle_id = db.Column(db.Integer, db.ForeignKey("vehicle.id"), nullable=False)
     vehicle = db.relationship("Vehicle", backref="maintenance_records", lazy=True)
-    description = db.Column(db.String(255), nullable=False)
-    cost = db.Column(db.Float, default=0.0)
-    date_reported = db.Column(db.DateTime, default=datetime.utcnow)
 
+    driver_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    driver = db.relationship("User", backref="maintenance_reports", lazy=True)
+
+    description = db.Column(db.String(255), nullable=False)
+
+    reported_cost = db.Column(db.Float, default=0.0)  # cost provided by driver
+    actual_cost   = db.Column(db.Float, default=0.0)  # cost admin enters after completion
+
+    date_reported = db.Column(db.DateTime, default=datetime.utcnow)
+    date_completed = db.Column(db.DateTime, nullable=True)
+
+    status = db.Column(db.String(50), default="Pending")
 
     def __repr__(self):
-        return f"<Maintenance {self.vehicle_id} - {self.date_reported}>"
+        return f"<Maintenance vehicle={self.vehicle_id}, status={self.status}>"
 
 
 

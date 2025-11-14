@@ -1,60 +1,53 @@
 from flask import (
     Blueprint, render_template, redirect, url_for,
-    request, flash, session
+    request, flash, session, make_response, Response
 )
-from datetime import datetime,date
-
-from flask_login import current_user
-from werkzeug.security import check_password_hash, generate_password_hash
-from mswaki import db
-from mswaki.models import User, Booking, Vehicle, Maintenance, MisbehaviorReport
-from mswaki.models import LeaveRequest
+from datetime import datetime, date
 from functools import wraps
-from flask import session, flash, redirect, url_for
-from sqlalchemy import extract, func
-from mswaki.models import DailyCollection
+from werkzeug.security import check_password_hash, generate_password_hash
+from flask_login import current_user, login_user, logout_user, login_required
+from sqlalchemy import func
+
+from mswaki import db
+from mswaki.models import (
+    User, Booking, Vehicle, Maintenance, MisbehaviorReport,
+    LeaveRequest, DailyCollection
+)
 import csv
+import io
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 from flask import make_response
+
 # ============================================================
 # BLUEPRINT SETUP
 # ============================================================
 routes = Blueprint("routes", __name__)
 
 # ============================================================
-# LOGIN REQUIRED DECORATOR
+# ROLE-BASED ACCESS DECORATOR
 # ============================================================
-def login_required(role=None):
-    """
-    Custom login + role-based access decorator.
-    Ensures a user is logged in, and optionally checks their role.
-    Redirects unauthorized users to appropriate dashboards or login page.
-    """
+def role_required(role):
+    """Ensure the current_user has the given role"""
     def decorator(f):
-        @wraps(f)  # 🧠 preserves original function metadata (critical)
+        @wraps(f)
         def decorated_function(*args, **kwargs):
-            # Check login status
-            if "user_id" not in session:
+            if not current_user.is_authenticated:
                 flash("Please log in first.", "warning")
                 return redirect(url_for("routes.login"))
-
-            # Check role if specified
-            user_role = session.get("role")
-            if role and user_role != role:
+            if current_user.role != role:
                 flash("You are not authorized to access this page.", "danger")
-
-                # Redirect based on user role
-                if user_role == "admin":
+                # Redirect based on role
+                if current_user.role == "admin":
                     return redirect(url_for("routes.admin_dashboard"))
-                elif user_role == "driver":
+                elif current_user.role == "driver":
                     return redirect(url_for("routes.driver_dashboard"))
                 else:
                     return redirect(url_for("routes.user_dashboard"))
-
-            # ✅ Everything okay — allow access
             return f(*args, **kwargs)
-
         return decorated_function
     return decorator
+
 # ============================================================
 # PUBLIC ROUTES
 # ============================================================
@@ -70,10 +63,9 @@ def login():
         user = User.query.filter_by(email=email).first()
 
         if user and check_password_hash(user.password, password):
-            session["user_id"] = user.id
-            session["role"] = user.role
-            session["name"] = user.name
+            login_user(user)
             flash(f"Welcome back, {user.name}!", "success")
+            # Redirect based on role
             if user.role == "admin":
                 return redirect(url_for("routes.admin_dashboard"))
             elif user.role == "driver":
@@ -82,6 +74,7 @@ def login():
                 return redirect(url_for("routes.user_dashboard"))
         else:
             flash("Invalid email or password.", "danger")
+
     return render_template("login.html")
 
 @routes.route("/register", methods=["GET", "POST"])
@@ -110,8 +103,9 @@ def register():
     return render_template("register.html")
 
 @routes.route("/logout")
+@login_required
 def logout():
-    session.clear()
+    logout_user()
     flash("You have been logged out.", "info")
     return redirect(url_for("routes.login"))
 
@@ -119,67 +113,116 @@ def logout():
 # ADMIN ROUTES
 # ============================================================
 @routes.route("/admin/dashboard")
-@login_required(role="admin")
+@login_required
+@role_required("admin")
 def admin_dashboard():
+    # ---- BOOKINGS ----
+    bookings = Booking.query.order_by(Booking.booking_date.desc()).limit(10).all()
+    booking_data = [
+        {
+            "id": b.id,
+            "user_name": b.user.name if b.user else "Unknown",
+            "route": b.route,
+            "date": b.booking_date.strftime("%Y-%m-%d"),
+            "status": b.status
+        } for b in bookings
+    ]
+
+    # ---- DAILY COLLECTIONS ----
+    today = date.today()
+    today_collections = DailyCollection.query.filter_by(date=today).all()
+    today_revenue = sum(c.amount for c in today_collections)
+    today_trips = sum(c.trips for c in today_collections)
+
+    # ---- MONTHLY ----
+    first_day = date(today.year, today.month, 1)
+    month_collections = DailyCollection.query.filter(DailyCollection.date >= first_day).all()
+    month_revenue = sum(c.amount for c in month_collections)
+
+    # ---- MAINTENANCE COST THIS MONTH ----
+    month_maintenance = db.session.query(func.sum(Maintenance.actual_cost))\
+        .filter(Maintenance.status == "Completed", Maintenance.date_reported >= first_day).scalar() or 0
+    month_profit = month_revenue - month_maintenance
+
+    # ---- VEHICLE STATS ----
+    active_vehicles = Vehicle.query.filter_by(status="Active").count()
+    vehicles_on_leave = Vehicle.query.filter_by(status="On Leave").count()
+
+    # ---- LEAVE STATS ----
+    pending_leaves = LeaveRequest.query.filter_by(status="Pending").count()
+
+    # ---- MISBEHAVIOR reports count ----
+    misbehavior_count = MisbehaviorReport.query.count()
+
     stats = {
-        "today_revenue": "12,500",
-        "today_trips": 56,
-        "month_profit": "385,000",
-        "month_maintenance": "45,000",
-        "active_vehicles": Vehicle.query.filter_by(status="available").count(),
-        "vehicles_on_leave": 2,
-        "pending_leaves": 1
+        "today_revenue": today_revenue,
+        "today_trips": today_trips,
+        "month_profit": month_profit,
+        "month_maintenance": month_maintenance,
+        "active_vehicles": active_vehicles,
+        "vehicles_on_leave": vehicles_on_leave,
+        "pending_leaves": pending_leaves,
+        "misbehavior_reports": misbehavior_count
     }
-    bookings = Booking.query.order_by(Booking.created_at.desc()).limit(10).all()
-    return render_template("admin_dashboard.html", stats=stats, bookings=bookings)
+
+    return render_template("admin_dashboard.html", stats=stats, bookings=booking_data)
 
 
+# =================== ADMIN EXPORT CSV =====================
+@routes.route("/admin/export_csv")
+@login_required
+@role_required("admin")
+def export_csv():
+    collections = DailyCollection.query.all()
 
-@routes.route("/admin/drivers")
-@login_required(role="admin")
-def admin_drivers():
-    drivers = User.query.filter_by(role="driver").all()
-    vehicles = Vehicle.query.all()
-    return render_template("admin_drivers.html", drivers=drivers, vehicles=vehicles)
+    import csv
+    from io import StringIO
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Driver", "Trips", "Amount", "Vehicle", "Date"])
 
-@routes.route("/admin/finance")
-@login_required(role="admin")
-def admin_finance():
-    # --- Revenue from driver collections ---
-    collections = (
-        db.session.query(
-            DailyCollection.date,
-            User.name.label("driver_name"),
-            Vehicle.plate_number.label("vehicle_plate"),
-            DailyCollection.amount
-        )
-        .join(User, User.id == DailyCollection.driver_id)
-        .join(Vehicle, Vehicle.driver_id == User.id)
-        .all()
+    for c in collections:
+        writer.writerow([
+            c.driver.name if c.driver else "N/A",
+            c.trips,
+            c.amount,
+            c.driver.vehicle.plate_number if c.driver and c.driver.vehicle else "N/A",
+            c.date
+        ])
+
+    output.seek(0)
+    return Response(
+        output,
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment; filename=finance_report.csv"}
     )
 
-    # --- Group revenue by month ---
+@routes.route("/admin/finance")
+@login_required
+@role_required("admin")
+def admin_finance():
+    collections = db.session.query(
+        DailyCollection.date,
+        User.name.label("driver_name"),
+        Vehicle.plate_number.label("vehicle_plate"),
+        DailyCollection.amount
+    ).join(User, User.id == DailyCollection.driver_id)\
+     .join(Vehicle, Vehicle.driver_id == User.id).all()
+
     monthly_revenue = {}
     for c in collections:
         month = c.date.strftime("%B %Y")
         monthly_revenue.setdefault(month, 0)
         monthly_revenue[month] += c.amount
 
-    # --- Total expenses (from maintenance) ---
-    total_expenses = db.session.query(db.func.sum(Maintenance.cost)).scalar() or 0.0
+    total_expenses = db.session.query(func.sum(Maintenance.actual_cost)).scalar() or 0.0
 
-    # --- Total revenue ---
     total_revenue = sum(monthly_revenue.values())
-
-    # --- Profit/Loss ---
     profit = total_revenue - total_expenses
 
-    # Prepare chart data as a list of dicts
     chart_data = [{"month": str(m), "revenue": float(r)} for m, r in monthly_revenue.items()]
-    
-    # Sort the data by month if needed (optional)
     chart_data.sort(key=lambda x: datetime.strptime(x['month'], '%B %Y'))
-    
+
     return render_template(
         "admin_finance.html",
         collections=collections,
@@ -187,11 +230,12 @@ def admin_finance():
         total_revenue=total_revenue,
         total_expenses=total_expenses,
         profit=profit,
-        chart_data=chart_data  # Pass the Python list directly
+        chart_data=chart_data
     )
-@routes.route("/admin/finance/download")
-@login_required(role="admin")
-def download_finance_report():
+
+@routes.route("/admin/finance/download_pdf")
+@role_required(role="admin")
+def download_finance_pdf():
     collections = (
         db.session.query(
             DailyCollection.date,
@@ -204,18 +248,43 @@ def download_finance_report():
         .all()
     )
 
-    output = make_response()
-    writer = csv.writer(output)
-    writer.writerow(["Date", "Driver", "Vehicle", "Amount (KES)"])
+    # Create a PDF in memory
+    buffer = io.BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=letter)
+    width, height = letter
+
+    pdf.setFont("Helvetica-Bold", 16)
+    pdf.drawString(200, height - 50, "Finance Report")
+
+    pdf.setFont("Helvetica", 12)
+    y = height - 100
+    pdf.drawString(50, y, "Date")
+    pdf.drawString(150, y, "Driver")
+    pdf.drawString(300, y, "Vehicle")
+    pdf.drawString(450, y, "Amount (KES)")
+    y -= 20
+
     for c in collections:
-        writer.writerow([c.date, c.driver_name, c.vehicle_plate, c.amount])
+        pdf.drawString(50, y, str(c.date))
+        pdf.drawString(150, y, str(c.driver_name))
+        pdf.drawString(300, y, str(c.vehicle_plate))
+        pdf.drawString(450, y, str(c.amount))
+        y -= 20
+        if y < 50:
+            pdf.showPage()
+            y = height - 50
 
-    output.headers["Content-Disposition"] = "attachment; filename=finance_report.csv"
-    output.headers["Content-Type"] = "text/csv"
-    return output
+    pdf.save()
+    buffer.seek(0)
 
+    response = make_response(buffer.getvalue())
+    response.headers["Content-Type"] = "application/pdf"
+    response.headers["Content-Disposition"] = "attachment; filename=finance_report.pdf"
+    return response
+# ------------------ Admin maintenance ------------------
 @routes.route("/admin/maintenance")
-@login_required(role="admin")
+@login_required
+@role_required("admin")
 def admin_maintenance():
     maintenance = Maintenance.query.order_by(Maintenance.date_reported.desc()).all()
     for item in maintenance:
@@ -226,49 +295,137 @@ def admin_maintenance():
             item.driver_name = "Unassigned"
             item.plate_number = "N/A"
     return render_template("admin_maintenance.html", maintenance=maintenance)
-@routes.route("/admin/complete_maintenance/<int:maintenance_id>", methods=["POST"])
-@login_required(role="admin")
-def complete_maintenance(maintenance_id):
-    """Mark a maintenance report as completed and deduct from revenue"""
-    maintenance = Maintenance.query.get_or_404(maintenance_id)
-    actual_cost = request.form.get("actual_cost")
+@routes.route('/admin/drivers', methods=['GET'])
+@role_required("admin")
+def admin_drivers():
+    """Display all drivers and allow admin to add vehicles/drivers"""
+    drivers = User.query.filter_by(role='driver').all()
+    return render_template('admin_drivers.html', drivers=drivers)
 
-    try:
-        actual_cost = float(actual_cost)
-    except ValueError:
-        flash("Invalid cost entered.", "danger")
-        return redirect(url_for("routes.admin_maintenance"))
+# -------------------
+# ADD DRIVER
+# -------------------
 
-    # Update maintenance record
-    maintenance.cost = actual_cost
-    maintenance.status = "Completed"
+@routes.route('/admin/add_driver', methods=['POST'])
+@role_required("admin")
+def add_driver():
+    name = request.form.get('name')
+    email = request.form.get('email')
+    password = request.form.get('password')
+
+    if not name or not email or not password:
+        flash("All fields are required to add a driver.", "warning")
+        return redirect(url_for('routes.admin_drivers'))
+
+    # Check for duplicate email
+    if User.query.filter_by(email=email).first():
+        flash("Driver with this email already exists.", "danger")
+        return redirect(url_for('routes.admin_drivers'))
+
+    new_driver = User(name=name, email=email, password=password, role='driver')
+    db.session.add(new_driver)
     db.session.commit()
 
-    # Optionally deduct from revenue / update finance table
-    # Assuming you have a total revenue or daily_collection table
-    # Example: update a RevenueSummary table
-    # = RevenueSummary.query.first()
-    #revenue_summary.expenses += actual_cost
-    #.profit = revenue_summary.revenue - revenue_summary.expenses
-    #db.session.commit()
-    #return render_template(
-   # "admin_finance.html",
-   # total_revenue=total_revenue,
-   # total_expenses=total_expenses,
-    #=profit,
-   # collections=daily_collections
-#)
+    flash(f"Driver {name} added successfully!", "success")
+    return redirect(url_for('routes.admin_drivers'))
 
+# -------------------
+# ADD VEHICLE
+# -------------------
 
-    flash(f"Maintenance {maintenance.id} marked as completed and cost updated.", "success")
+@routes.route('/admin/add_vehicle', methods=['POST'])
+@role_required("admin")
+def add_vehicle():
+    plate_number = request.form.get('plate_number')
+    model = request.form.get('model')
+    capacity = request.form.get('capacity')
+    driver_id = request.form.get('driver_id')
+    status = request.form.get('status', 'available')
+
+    if not plate_number or not model or not capacity or not driver_id:
+        flash("All fields are required to add a vehicle.", "warning")
+        return redirect(url_for('routes.admin_drivers'))
+
+    # Check for duplicate plate
+    if Vehicle.query.filter_by(plate_number=plate_number).first():
+        flash("Vehicle with this plate number already exists.", "danger")
+        return redirect(url_for('routes.admin_drivers'))
+
+    vehicle = Vehicle(
+        plate_number=plate_number,
+        status=status,
+        driver_id=int(driver_id)
+    )
+    db.session.add(vehicle)
+    db.session.commit()
+
+    flash(f"Vehicle {plate_number} added successfully!", "success")
+    return redirect(url_for('routes.admin_drivers'))
+
+# -------------------
+# RATE DRIVER
+# -------------------
+
+@routes.route('/admin/rate_driver/<int:driver_id>', methods=['POST'])
+@role_required("admin")
+def rate_driver(driver_id):
+    driver = User.query.filter_by(id=driver_id, role='driver').first_or_404()
+    rating = request.form.get('rating')
+
+    try:
+        rating_value = float(rating)
+        if rating_value < 1 or rating_value > 5:
+            raise ValueError
+    except:
+        flash("Rating must be a number between 1 and 5.", "danger")
+        return redirect(url_for('routes.admin_drivers'))
+
+    driver.rating = rating_value
+    db.session.commit()
+    flash(f"{driver.name} has been rated {rating_value} stars.", "success")
+    return redirect(url_for('routes.admin_drivers'))
+
+# -------------------
+# REMOVE DRIVER
+# -------------------
+
+@routes.route('/admin/remove_driver/<int:driver_id>', methods=['POST'])
+@role_required("admin")
+def remove_driver(driver_id):
+    driver = User.query.filter_by(id=driver_id, role='driver', status='active').first_or_404()
+
+    # Soft-delete: deactivate driver instead of deleting
+    driver.status = 'inactive'
+    db.session.commit()
+    flash(f"Driver {driver.name} has been deactivated.", "success")
+    return redirect(url_for('routes.admin_drivers'))
+@routes.route("/admin/maintenance/complete/<int:maintenance_id>", methods=["POST"])
+@login_required
+@role_required("admin")
+def complete_maintenance(maintenance_id):
+    maintenance = Maintenance.query.get_or_404(maintenance_id)
+    if maintenance.status == "Completed":
+        flash("This maintenance is already completed.", "info")
+        return redirect(url_for("routes.admin_maintenance"))
+
+    actual_cost = float(request.form.get("actual_cost", 0))
+    maintenance.status = "Completed"
+    maintenance.actual_cost = actual_cost
+
+    vehicle = Vehicle.query.get(maintenance.vehicle_id)
+    if vehicle:
+        vehicle.status = "Active"
+
+    db.session.commit()
+    flash("Maintenance marked as completed.", "success")
     return redirect(url_for("routes.admin_maintenance"))
 
-
-
+# ------------------ Admin settings ------------------
 @routes.route("/admin/settings", methods=["GET", "POST"])
-@login_required(role="admin")
+@login_required
+@role_required("admin")
 def admin_settings():
-    admin = User.query.get(session["user_id"])
+    admin = current_user
     if request.method == "POST":
         admin.name = request.form.get("name")
         admin.email = request.form.get("email")
@@ -277,15 +434,17 @@ def admin_settings():
         return redirect(url_for("routes.admin_settings"))
     return render_template("admin_settings.html", admin=admin)
 
+# ------------------ Misbehavior ------------------
 @routes.route("/admin/misbehavior_reports")
-@login_required(role="admin")
+@role_required("admin")
 def admin_misbehavior_reports():
     reports = MisbehaviorReport.query.order_by(MisbehaviorReport.date_reported.desc()).all()
-    users = {u.id: u.name for u in User.query.all()}
-    return render_template("admin_misbehavior.html", reports=reports, users=users)
+    user_dict = {u.id: u.name for u in User.query.all()}  # match template
+    return render_template("admin_misbehavior.html", reports=reports, user_dict=user_dict)
 
 @routes.route("/admin/resolve_report/<int:report_id>", methods=["POST"])
-@login_required(role="admin")
+@login_required
+@role_required("admin")
 def resolve_report(report_id):
     report = MisbehaviorReport.query.get_or_404(report_id)
     report.status = "resolved"
@@ -293,108 +452,20 @@ def resolve_report(report_id):
     flash(f"Report #{report.id} marked as resolved.", "success")
     return redirect(url_for("routes.admin_misbehavior_reports"))
 
-# ============================================================
-# ADMIN DRIVER & VEHICLE MANAGEMENT
-# ============================================================
-@routes.route("/add_driver", methods=["POST"])
-@login_required(role="admin")
-def add_driver():
-    name = request.form.get("name")
-    email = request.form.get("email")
-    password = request.form.get("password")
-    if not (name and email and password):
-        flash("All fields are required.", "danger")
-        return redirect(url_for("routes.admin_drivers"))
-    if User.query.filter_by(email=email).first():
-        flash("Email already registered.", "warning")
-        return redirect(url_for("routes.admin_drivers"))
-    driver = User(name=name, email=email, password=generate_password_hash(password), role="driver")
-    db.session.add(driver)
-    db.session.commit()
-    flash("Driver added successfully!", "success")
-    return redirect(url_for("routes.admin_drivers"))
-
-@routes.route("/remove_driver/<int:driver_id>", methods=["POST"])
-@login_required(role="admin")
-def remove_driver(driver_id):
-    driver = User.query.get_or_404(driver_id)
-    db.session.delete(driver)
-    db.session.commit()
-    flash(f"Driver {driver.name} removed successfully.", "success")
-    return redirect(url_for("routes.admin_drivers"))
-
-@routes.route("/add_vehicle", methods=["POST"])
-@login_required(role="admin")
-def add_vehicle():
-    plate_number = request.form.get("plate_number")
-    driver_id = request.form.get("driver_id")
-    status = request.form.get("status")
-    if not (plate_number and driver_id):
-        flash("All fields are required.", "danger")
-        return redirect(url_for("routes.admin_drivers"))
-    try:
-        driver_id = int(driver_id)
-        vehicle = Vehicle(plate_number=plate_number, driver_id=driver_id, status=status)
-        db.session.add(vehicle)
-        db.session.commit()
-        flash("Vehicle added successfully!", "success")
-    except Exception as e:
-        db.session.rollback()
-        flash(f"Error adding vehicle: {str(e)}", "danger")
-    return redirect(url_for("routes.admin_drivers"))
-
-@routes.route("/admin/delete_vehicle/<int:vehicle_id>", methods=["POST"])
-@login_required(role="admin")
-def delete_vehicle(vehicle_id):
-    vehicle = Vehicle.query.get_or_404(vehicle_id)
-    db.session.delete(vehicle)
-    db.session.commit()
-    flash("Vehicle deleted successfully.", "info")
-    return redirect(url_for("routes.admin_drivers"))
-
-# ------------------ RATE DRIVER ------------------
-@routes.route("/rate_driver/<int:driver_id>", methods=["POST"])
-@login_required()
-def rate_driver(driver_id):
-    rating = request.form.get("rating")
-    driver = User.query.get_or_404(driver_id)
-    try:
-        driver.rating = float(rating)
-        db.session.commit()
-        flash(f"Driver {driver.name} rated {rating} stars.", "success")
-    except Exception:
-        db.session.rollback()
-        flash("Failed to rate driver.", "danger")
-    return redirect(request.referrer or url_for("routes.admin_drivers"))
-@routes.route("/admin/reports")
-@login_required(role="admin")
-def admin_reports():
-    """Admin summary reports page (statistics overview)"""
-    total_users = User.query.count()
-    total_drivers = User.query.filter_by(role="driver").count()
-    total_bookings = Booking.query.count()
-    total_vehicles = Vehicle.query.count()
-    maintenance_count = Maintenance.query.count()
-    unresolved_reports = MisbehaviorReport.query.filter_by(status="pending").count()
-
-    stats = {
-        "total_users": total_users,
-        "total_drivers": total_drivers,
-        "total_bookings": total_bookings,
-        "total_vehicles": total_vehicles,
-        "maintenance": maintenance_count,
-        "unresolved_reports": unresolved_reports,
-    }
-
-    return render_template("admin_reports.html", stats=stats)
+# ------------------ Admin bookings ------------------
+@routes.route("/admin/bookings", methods=["GET"])
+@login_required
+@role_required("admin")
+def admin_bookings():
+    bookings = Booking.query.order_by(Booking.booking_date.desc()).all()
+    return render_template("admin_bookings.html", bookings=bookings)
 
 @routes.route("/admin/update_booking/<int:booking_id>", methods=["POST"])
-@login_required(role="admin")
+@login_required
+@role_required("admin")
 def admin_update_booking(booking_id):
-    """Allow admin to approve or reject a booking"""
     booking = Booking.query.get_or_404(booking_id)
     action = request.form.get("action")
-
     if action == "approve":
         booking.status = "approved"
         flash(f"Booking #{booking.id} has been approved.", "success")
@@ -403,77 +474,53 @@ def admin_update_booking(booking_id):
         flash(f"Booking #{booking.id} has been rejected.", "danger")
     else:
         flash("Invalid action.", "warning")
-
     db.session.commit()
     return redirect(url_for("routes.admin_bookings"))
-@routes.route("/admin/bookings", methods=["GET"])
-@login_required(role="admin")
-def admin_bookings():
-    """
-    Admin view — displays all vehicle bookings in the system.
-    """
-    # Fetch all bookings, most recent first
-    bookings = (
-        Booking.query
-        .order_by(Booking.booking_date.desc())
-        .all()
-    )
-
-    return render_template("admin_bookings.html", bookings=bookings)
-
-
 
 # ============================================================
 # DRIVER ROUTES
 # ============================================================
-
 @routes.route("/driver/dashboard")
-@login_required(role="driver")
+@login_required
+@role_required("driver")
 def driver_dashboard():
-    """Show driver dashboard with latest maintenance reports"""
-    driver_id = session.get("user_id")
-
-    # Get vehicles assigned to this driver
+    driver_id = current_user.id
     vehicles = Vehicle.query.filter_by(driver_id=driver_id).all()
     vehicle_ids = [v.id for v in vehicles]
 
-    # Fetch recent maintenance reports related to driver vehicles
     maintenance = Maintenance.query.filter(Maintenance.vehicle_id.in_(vehicle_ids))\
         .order_by(Maintenance.date_reported.desc()).limit(10).all()
-
     return render_template("driver_dashboard.html", maintenance=maintenance, vehicles=vehicles)
 
-
 @routes.route("/driver/report_maintenance", methods=["GET", "POST"])
-@login_required(role="driver")
+@login_required
+@role_required("driver")
 def report_maintenance():
-    """Allow driver to report a maintenance issue"""
-    driver_id = session.get("user_id")
+    driver_id = current_user.id
+    vehicles = Vehicle.query.filter_by(driver_id=driver_id).all()
 
     if request.method == "POST":
         vehicle_id = request.form.get("vehicle_id")
         description = request.form.get("description")
-        cost = request.form.get("cost", 0.0)  # new field
-
-        if not (vehicle_id and description):
+        reported_cost = request.form.get("cost")
+        if not (vehicle_id and description and reported_cost):
             flash("All fields are required.", "danger")
             return redirect(url_for("routes.report_maintenance"))
-
         try:
-            cost = float(cost)
+            reported_cost = float(reported_cost)
         except ValueError:
             flash("Please enter a valid numeric value for cost.", "danger")
             return redirect(url_for("routes.report_maintenance"))
 
         maintenance = Maintenance(
             vehicle_id=vehicle_id,
+            driver_id=driver_id,
             description=description,
-            cost=cost,  # include cost
+            reported_cost=reported_cost,
             date_reported=datetime.now(),
         )
         db.session.add(maintenance)
 
-        # Optionally mark vehicle as "In Maintenance"
         vehicle = Vehicle.query.get(vehicle_id)
         if vehicle:
             vehicle.status = "In Maintenance"
@@ -482,28 +529,21 @@ def report_maintenance():
         flash("Maintenance issue reported successfully!", "success")
         return redirect(url_for("routes.driver_dashboard"))
 
-    # Fetch driver’s assigned vehicles
-    vehicles = Vehicle.query.filter_by(driver_id=driver_id).all()
     return render_template("report_maintenance.html", vehicles=vehicles)
 
-
+# ------------------ Driver daily collection ------------------
 @routes.route("/driver/daily_collection", methods=["GET", "POST"])
-@login_required(role="driver")
+@login_required
+@role_required("driver")
 def driver_daily_collection():
-    driver_id = session.get("user_id")
-
-    from mswaki.models import DailyCollection
-
+    driver_id = current_user.id
     if request.method == "POST":
         trips = request.form.get("trips")
         amount = request.form.get("amount")
         collection_date = request.form.get("date")
-
-        # Check all required fields
         if not (trips and amount and collection_date):
             flash("All fields are required.", "danger")
             return redirect(url_for("routes.driver_daily_collection"))
-
         try:
             trips = int(trips)
             amount = float(amount)
@@ -512,53 +552,36 @@ def driver_daily_collection():
             flash("Invalid data format.", "danger")
             return redirect(url_for("routes.driver_daily_collection"))
 
-        # ✅ Only check for existing after collection_date is defined
         existing = DailyCollection.query.filter_by(driver_id=driver_id, date=collection_date).first()
         if existing:
             flash("You already submitted a collection for this date.", "warning")
             return redirect(url_for("routes.driver_daily_collection"))
 
-        collection = DailyCollection(
-            driver_id=driver_id,
-            trips=trips,
-            amount=amount,
-            date=collection_date
-        )
+        collection = DailyCollection(driver_id=driver_id, trips=trips, amount=amount, date=collection_date)
         db.session.add(collection)
         db.session.commit()
         flash("Daily collection recorded successfully!", "success")
         return redirect(url_for("routes.driver_daily_collection"))
 
-    # Fetch latest collections for GET requests
-    collections = DailyCollection.query.filter_by(driver_id=driver_id)\
-        .order_by(DailyCollection.date.desc()).limit(10).all()
+    collections = DailyCollection.query.filter_by(driver_id=driver_id).order_by(DailyCollection.date.desc()).limit(10).all()
+    return render_template("driver_daily_collection.html", collections=collections, today=date.today().isoformat())
 
-    return render_template(
-        "driver_daily_collection.html",
-        collections=collections,
-        today=date.today().isoformat()
-    )
-
-@routes.route('/driver/leave_requests', methods=['GET', 'POST'])
-@login_required(role="driver")
+# ------------------ Driver leave requests ------------------
+@routes.route("/driver/leave_requests", methods=["GET", "POST"])
+@login_required
+@role_required("driver")
 def driver_leave_requests():
-    """Driver Leave Requests — view and submit leave requests."""
-
-    driver_id = session.get("user_id")
-
-    if request.method == 'POST':
-        start_date_str = request.form.get('start_date')
-        end_date_str = request.form.get('end_date')
-        leave_type = request.form.get('leave_type')
-        reason = request.form.get('reason')
-
+    driver_id = current_user.id
+    if request.method == "POST":
+        start_date_str = request.form.get("start_date")
+        end_date_str = request.form.get("end_date")
+        leave_type = request.form.get("leave_type")
+        reason = request.form.get("reason")
         if not (start_date_str and end_date_str and leave_type and reason):
             flash("Please fill in all required fields.", "danger")
         else:
-            # ✅ Convert string -> Python date
             start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
             end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-
             leave = LeaveRequest(
                 driver_id=driver_id,
                 start_date=start_date,
@@ -571,40 +594,31 @@ def driver_leave_requests():
             db.session.add(leave)
             db.session.commit()
             flash("Leave request submitted successfully!", "success")
-
         return redirect(url_for('routes.driver_leave_requests'))
 
-    # ✅ Fetch all requests for this driver
-    leave_requests = LeaveRequest.query.filter_by(driver_id=driver_id).order_by(
-        LeaveRequest.request_date.desc()
-    ).all()
+    leave_requests = LeaveRequest.query.filter_by(driver_id=driver_id).order_by(LeaveRequest.request_date.desc()).all()
+    return render_template("driver_leave_requests.html", leave_requests=leave_requests, today=date.today().isoformat())
 
-    return render_template(
-        "driver_leave_requests.html",
-        leave_requests=leave_requests,
-        today=date.today().isoformat()
-    )
+# ============================================================
 # PASSENGER ROUTES
 # ============================================================
 @routes.route("/user/dashboard")
-@login_required(role="passenger")
+@login_required
+@role_required("passenger")
 def user_dashboard():
-    # Show latest 10 bookings for this user
-    bookings = Booking.query.filter_by(user_id=session["user_id"])\
-        .order_by(Booking.created_at.desc()).limit(10).all()
+    bookings = Booking.query.filter_by(user_id=current_user.id).order_by(Booking.booking_date.desc()).limit(10).all()
     return render_template("user_dashboard.html", bookings=bookings)
-
-
 
 @routes.route("/book_vehicle", methods=["GET", "POST"])
 @login_required
+@role_required("passenger")
 def book_vehicle():
+    available_vehicles = Vehicle.query.filter_by(status="Available").all()
     if request.method == "POST":
         vehicle_id = request.form.get("vehicle_id")
         pickup = request.form.get("pickup")
         destination = request.form.get("destination")
         reason = request.form.get("reason")
-
         if not all([vehicle_id, pickup, destination, reason]):
             flash("Please fill in all fields.", "danger")
             return redirect(url_for("routes.book_vehicle"))
@@ -626,58 +640,49 @@ def book_vehicle():
         except Exception as e:
             db.session.rollback()
             flash(f"Error while saving booking: {e}", "danger")
+            return redirect(url_for("routes.book_vehicle"))
 
-    # Load available vehicles logic...
     return render_template("book_vehicle.html", available_vehicles=available_vehicles)
 
 @routes.route("/user/profile", methods=["GET", "POST"])
-@login_required(role="passenger")
+@login_required
+@role_required("passenger")
 def user_profile():
-    user = User.query.get(session["user_id"])
+    user = current_user
     if request.method == "POST":
         name = request.form.get("name")
         email = request.form.get("email")
         password = request.form.get("password")
-
-        if name:
-            user.name = name
-        if email:
-            user.email = email
-        if password:
-            user.password = generate_password_hash(password)
-
+        if name: user.name = name
+        if email: user.email = email
+        if password: user.password = generate_password_hash(password)
         db.session.commit()
         flash("Profile updated successfully.", "success")
         return redirect(url_for("routes.user_profile"))
-
     return render_template("user_profile.html", user=user)
+
 @routes.route("/user/report_misbehavior", methods=["GET", "POST"])
-@login_required(role="passenger")
+@login_required
+@role_required("passenger")
 def report_misbehavior():
     if request.method == "POST":
         driver_id = request.form.get("driver_id")
         vehicle_id = request.form.get("vehicle_id")
         description = request.form.get("description")
-
         if not description:
             flash("Please provide details of the misbehavior.", "danger")
             return redirect(url_for("routes.report_misbehavior"))
-
-        # ✅ Use session ID instead of current_user.id
-        user_id = session.get("user_id")
 
         report = MisbehaviorReport(
             driver_id=int(driver_id) if driver_id else None,
             vehicle_id=int(vehicle_id) if vehicle_id else None,
             description=description,
             date_reported=datetime.now(),
-            reporter_type="user" if user_id else "anonymous"
+            reporter_type="user"
         )
-
         db.session.add(report)
         db.session.commit()
-
-        flash("Your report has been submitted successfully. Thank you for helping us improve safety.", "success")
+        flash("Your report has been submitted successfully.", "success")
         return redirect(url_for("routes.user_dashboard"))
 
     drivers = User.query.filter_by(role="driver").all()

@@ -1,17 +1,15 @@
 {% extends "base.html" %}
-{% block title %}Mswaki — Owner Dashboard{% endblock %}
+{% block title %}Mswaki — Admin Dashboard{% endblock %}
 {% block body_role %}admin{% endblock %}
 
 {% block sidebar %}
 <nav class="side-nav" aria-label="Admin menu">
   <a class="side-link" href="{{ url_for('routes.admin_dashboard') }}">Overview</a>
-  <a class="side-link" href="{{ url_for('routes.admin_finance') }}">Finances</a>
-  <a class="side-link" href="{{ url_for('routes.admin_maintenance') }}">Maintenance</a>
-  <a class="side-link" href="{{ url_for('routes.admin_bookings') }}">Bookings</a>
   <a class="side-link" href="{{ url_for('routes.admin_drivers') }}">Drivers</a>
-  <a class="side-link" href="{{ url_for('routes.admin_settings') }}">Settings</a>
-  <li><a href="{{ url_for('routes.admin_misbehavior_reports') }}">Misbehavior Reports</a></li>
-
+  <a class="side-link" href="{{ url_for('routes.admin_bookings') }}">Bookings</a>
+  <a class="side-link" href="{{ url_for('routes.admin_maintenance') }}">Maintenance</a>
+  <a class="side-link" href="{{ url_for('routes.admin_finance') }}">Finance</a>
+  <a class="side-link" href="{{ url_for('routes.admin_misbehavior_reports') }}">Misbehavior Reports</a>
 </nav>
 {% endblock %}
 
@@ -19,12 +17,12 @@
 <header class="vstack" style="gap:6px; margin-bottom:16px;">
   <div class="hstack" style="justify-content:space-between; align-items:center;">
     <div>
-      <h1 style="margin:0; font-size:1.25rem;">Owner Dashboard</h1>
-      <p style="margin:0; color:var(--muted); font-size:0.95rem;">Overview of revenue, maintenance costs and bookings</p>
+      <h1 style="margin:0; font-size:1.25rem;">Admin Dashboard</h1>
+      <p style="margin:0; color:var(--muted); font-size:0.95rem;">Overview of revenue, maintenance costs, and bookings</p>
     </div>
 
     <div class="hstack">
-      <button class="btn" id="export-btn">Export CSV</button>
+      <button class="btn" onclick="window.location.href='{{ url_for('routes.export_csv') }}'">Export CSV</button>
       <button class="btn secondary" id="filter-btn">Filter</button>
     </div>
   </div>
@@ -66,7 +64,7 @@
 </section>
 
 <section class="card" aria-labelledby="revenue-chart" style="margin-bottom:12px;">
-  <h3 id="revenue-chart" style="margin:0 0 12px 0;">Revenue trend</h3>
+  <h3 id="revenue-chart" style="margin:0 0 12px 0;">Revenue Trend</h3>
   <div style="min-height:220px; display:flex; align-items:center; justify-content:center; color:var(--muted);">
     <canvas id="revenueChart" width="600" height="220" aria-label="Revenue chart"></canvas>
   </div>

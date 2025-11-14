@@ -3,15 +3,13 @@
 {% block body_role %}admin{% endblock %}
 
 {% block sidebar %}
-<nav class="side-nav">
-   <a class="side-link" href="{{ url_for('routes.admin_dashboard') }}">Overview</a>
-  <a class="side-link" href="{{ url_for('routes.admin_finance') }}">Finances</a>
-  <a class="side-link" href="{{ url_for('routes.admin_maintenance') }}">Maintenance</a>
-  <a class="side-link" href="{{ url_for('routes.admin_bookings') }}">Bookings</a>
+<nav class="side-nav" aria-label="Admin menu">
+  <a class="side-link" href="{{ url_for('routes.admin_dashboard') }}">Overview</a>
   <a class="side-link" href="{{ url_for('routes.admin_drivers') }}">Drivers</a>
-  <a class="side-link" href="{{ url_for('routes.admin_settings') }}">Settings</a>
-  <li><a href="{{ url_for('routes.admin_misbehavior_reports') }}">Misbehavior Reports</a></li>
-
+  <a class="side-link" href="{{ url_for('routes.admin_bookings') }}">Bookings</a>
+  <a class="side-link" href="{{ url_for('routes.admin_maintenance') }}">Maintenance</a>
+  <a class="side-link" href="{{ url_for('routes.admin_finance') }}">Finance</a>
+  <a class="side-link" href="{{ url_for('routes.admin_misbehavior_reports') }}">Misbehavior Reports</a>
 </nav>
 {% endblock %}
 
@@ -79,18 +77,15 @@
   border-collapse: collapse;
   margin-top: 1rem;
 }
-
 .data-table th, .data-table td {
   padding: 0.8rem;
   border-bottom: 1px solid #e5e7eb;
   text-align: left;
 }
-
 .data-table th {
   background: #f3f4f6;
   font-weight: 600;
 }
-
 .badge {
   padding: 0.3rem 0.7rem;
   border-radius: 8px;

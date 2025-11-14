@@ -24,20 +24,21 @@
       {% for item in maintenance %}
       <tr>
         <td>{{ item.id }}</td>
-        <td>{{ item.plate_number }}</td>
-        <td>{{ item.driver_name }}</td>
+        <td>{{ item.vehicle.plate_number if item.vehicle else 'N/A' }}</td>
+        <td>{{ item.driver.name if item.driver else 'N/A' }}</td>
         <td>{{ item.description }}</td>
-        <td>{{ "%.2f"|format(item.cost) }}</td>
+        <td>{{ "%.2f"|format(item.reported_cost or 0) }}</td>
         <td>{{ item.date_reported.strftime('%Y-%m-%d') }}</td>
         <td>{{ item.status }}</td>
         <td>
           {% if item.status != "Completed" %}
-          <form method="POST" action="{{ url_for('routes.complete_maintenance', maintenance_id=item.id) }}">
-            <input type="number" name="actual_cost" step="0.01" placeholder="Enter actual cost" required>
-            <button type="submit" class="btn primary">Mark Complete</button>
-          </form>
+            <form method="POST" action="{{ url_for('routes.complete_maintenance', maintenance_id=item.id) }}">
+                <input type="number" name="actual_cost" step="0.01" placeholder="Actual cost" required>
+                <button class="btn primary" type="submit">Mark Complete</button>
+            </form>
           {% else %}
-           Completed
+            <strong style="color: green;">Completed</strong><br>
+            Cost: KES {{ "%.2f"|format(item.actual_cost or 0) }}
           {% endif %}
         </td>
       </tr>
