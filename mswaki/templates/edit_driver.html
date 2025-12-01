@@ -1,0 +1,53 @@
+{% extends 'admin_base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Edit Driver: {{ driver.name }}</h2>
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form action="{{ url_for('routes.add_driver') }}" method="POST" class="mt-3">
+        <input type="hidden" name="driver_id" value="{{ driver.id }}">
+
+        <div class="mb-3">
+            <label class="form-label">Name</label>
+            <input type="text" name="name" class="form-control" value="{{ driver.name }}" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" name="email" class="form-control" value="{{ driver.email }}" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Phone</label>
+            <input type="text" name="phone" class="form-control" value="{{ driver.phone or '' }}">
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Assign Vehicle</label>
+            <select name="vehicle_id" class="form-select">
+                <option value="">-- Select Vehicle --</option>
+                {% for vehicle in vehicles %}
+                    <option value="{{ vehicle.id }}" {% if vehicle.driver_id == driver.id %}selected{% endif %}>
+                        {{ vehicle.plate_number }} - {{ vehicle.make }} {{ vehicle.model }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+        <a href="{{ url_for('routes.admin_drivers') }}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

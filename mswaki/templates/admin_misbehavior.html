@@ -1,43 +1,185 @@
-{% extends "base.html" %}
-{% block title %}Misbehavior Reports{% endblock %}
-{% block body_role %}admin{% endblock %}
+{% extends "admin_base.html" %}
+{% block title %}Admin — Misbehavior Reports{% endblock %}
+
+{% block head_extra %}
+<style>
+  .report-card {
+    border-left: 4px solid;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  
+  .report-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+  
+  .report-card.pending {
+    border-left-color: var(--warning-500);
+  }
+  
+  .report-card.resolved {
+    border-left-color: var(--success-500);
+  }
+  
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: capitalize;
+  }
+  
+  .status-pending {
+    background-color: var(--warning-50);
+    color: var(--warning-700);
+  }
+  
+  .status-resolved {
+    background-color: var(--success-50);
+    color: var(--success-700);
+  }
+  
+  .user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--primary-50);
+    color: var(--primary-600);
+    font-weight: 600;
+  }
+</style>
+{% endblock %}
 
 {% block content %}
-<h1>Passenger Misbehavior Reports</h1>
-<p>Review reports submitted by passengers regarding driver behavior.</p>
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Header -->
+    <header class="admin-header">
+      <div>
+        <h1 class="page-title">Misbehavior Reports</h1>
+        <p class="text-gray-600">Review reports submitted by passengers regarding driver behavior</p>
+      </div>
+      <div class="admin-actions">
+        <button class="btn btn-outline" id="exportBtn">
+          <i class="fas fa-download"></i> Export
+        </button>
+      </div>
+    </header>
 
-<div class="card">
-  <table class="table">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Passenger</th>
-        <th>Driver ID</th>
-        <th>Description</th>
-        <th>Date Reported</th>
-        <th>Status</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for report in reports %}
-      <tr>
-        <td>{{ report.id }}</td>
-        <td>{{ user_dict.get(report.user_id, 'Unknown') }}</td>
-        <td>{{ report.driver_id }}</td>
-        <td>{{ report.description }}</td>
-        <td>{{ report.date_reported.strftime('%Y-%m-%d %H:%M') }}</td>
-        <td>{{ report.status }}</td>
-        <td>
-          <form method="POST" action="{{ url_for('routes.resolve_report', report_id=report.id) }}">
-            <button type="submit" class="btn small">Mark Resolved</button>
-          </form>
-        </td>
-      </tr>
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+      <div class="stat-card">
+        <div class="stat-value">{{ reports|length }}</div>
+        <div class="stat-label">
+          <i class="fas fa-flag"></i> Total Reports
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">
+          {{ reports|selectattr('status', 'equalto', 'pending')|list|length }}
+          <span class="text-sm font-normal text-gray-500">/ {{ reports|length }}</span>
+        </div>
+        <div class="stat-label">
+          <i class="fas fa-clock"></i> Pending Review
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">
+          {{ reports|selectattr('status', 'equalto', 'resolved')|list|length }}
+          <span class="text-sm font-normal text-gray-500">/ {{ reports|length }}</span>
+        </div>
+        <div class="stat-label">
+          <i class="fas fa-check-circle"></i> Resolved
+        </div>
+      </div>
+    </div>
+
+    <!-- Reports List -->
+    <div class="space-y-4">
+      {% if reports %}
+        {% for report in reports %}
+        <div class="card report-card {{ 'resolved' if report.status == 'resolved' else 'pending' }}">
+          <div class="p-4">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+              <div class="flex items-start space-x-4 mb-4 md:mb-0">
+                <div class="user-avatar">
+                  {{ user_dict.get(report.user_id, 'U')[0]|upper }}
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold">
+                    {{ user_dict.get(report.user_id, 'Unknown User') }}
+                    <span class="text-sm font-normal text-gray-500">• Report #{{ report.id }}</span>
+                  </h3>
+                  <p class="text-gray-600 mt-1">{{ report.description|truncate(150) }}</p>
+                  <div class="mt-2 flex flex-wrap gap-2">
+                    <span class="status-badge status-{{ report.status|lower }}">
+                      {{ report.status }}
+                    </span>
+                    <span class="text-sm text-gray-500">
+                      <i class="far fa-calendar-alt mr-1"></i>
+                      {{ report.date_reported.strftime('%b %d, %Y %I:%M %p') }}
+                    </span>
+                    <span class="text-sm text-gray-500">
+                      <i class="fas fa-user-tie mr-1"></i>
+                      Driver ID: {{ report.driver_id }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex flex-col space-y-2">
+                {% if report.status != 'resolved' %}
+                <form method="POST" action="{{ url_for('routes.resolve_report', report_id=report.id) }}" class="w-full">
+                  <button type="submit" class="btn btn-success w-full">
+                    <i class="fas fa-check mr-1"></i> Mark Resolved
+                  </button>
+                </form>
+                {% else %}
+                <div class="text-green-600 font-medium text-right">
+                  <i class="fas fa-check-circle mr-1"></i> Resolved
+                </div>
+                {% endif %}
+                <button class="btn btn-outline" onclick="viewReportDetails({{ report.id }})">
+                  <i class="fas fa-eye mr-1"></i> View Details
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
       {% else %}
-      <tr><td colspan="7" class="text-center">No reports available.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
+      <div class="card p-8 text-center">
+        <div class="text-gray-400 mb-4">
+          <i class="fas fa-flag text-4xl"></i>
+        </div>
+        <h3 class="text-lg font-medium text-gray-700 mb-1">No Misbehavior Reports</h3>
+        <p class="text-gray-500">No reports have been submitted yet.</p>
+      </div>
+      {% endif %}
+    </div>
+  </main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// View report details
+function viewReportDetails(id) {
+  // In a real app, this would fetch report details via AJAX
+  console.log('Viewing report:', id);
+  // For now, we'll just show an alert
+  alert('Viewing report ID: ' + id);
+}
+
+// Export functionality
+document.getElementById('exportBtn').addEventListener('click', function() {
+  // In a real app, this would export the reports data
+  console.log('Exporting reports...');
+  // For now, we'll just show an alert
+  alert('Exporting reports... (This is a demo)');
+});
+</script>
 {% endblock %}

@@ -1,173 +1,422 @@
-{% extends "base.html" %}
-{% block title %}Finance Dashboard{% endblock %}
-{% block body_role %}admin{% endblock %}
+{% extends "admin_base.html" %}
+{% block title %}Admin — Finance Dashboard{% endblock %}
+
+{% block head_extra %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+  .kpi-card { border-left: 6px solid transparent; }
+  .kpi-card.revenue { border-color: #4CAF50; }
+  .kpi-card.expense { border-color: #F44336; }
+  .kpi-card.profit { border-color: #2196F3; }
+  .kpi-value { font-size: 1.5rem; font-weight: 700; }
+  .kpi-sub { font-size: 0.9rem; color: #6c757d; }
+  .chart-card { min-height: 320px; }
+  .small-muted { color: #6c757d; font-size: 0.9rem; }
+  .table-responsive { max-height: 420px; overflow: auto; }
+  .badge-cat { font-weight: 600; }
+</style>
+{% endblock %}
 
 {% block content %}
-<header class="dashboard-header">
-  <h1>Finance Overview</h1>
-  <p class="muted">Monthly revenue, expenses, and profits.</p>
-</header>
+<div class="container-fluid py-3">
 
-<section class="grid grid-cols-3 gap-4 mb-6">
-  <div class="card">
-    <h3>Total Revenue</h3>
-    <p class="text-2xl text-green-600">KES {{ "%.2f"|format(total_revenue) }}</p>
+  <!-- KPIs -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card kpi-card revenue h-100">
+        <div class="card-body">
+          <div class="small-muted">Total Revenue</div>
+          <div class="kpi-value">KES {{ "{:,.2f}".format(total_collections or 0) }}</div>
+          <div class="kpi-sub">
+            <i class="fas fa-arrow-{{ 'up' if revenue_change >= 0 else 'down' }} text-{{ 'success' if revenue_change >= 0 else 'danger' }}"></i>
+            {{ "{:,.1f}%".format(revenue_change|abs if revenue_change is not none else 0) }} from last month
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card kpi-card expense h-100">
+        <div class="card-body">
+          <div class="small-muted">Total Expenses</div>
+          <div class="kpi-value">KES {{ "{:,.2f}".format(total_expenses or 0) }}</div>
+          <div class="kpi-sub">
+            <i class="fas fa-arrow-{{ 'up' if expense_change >= 0 else 'down' }} text-{{ 'danger' if expense_change >= 0 else 'success' }}"></i>
+            {{ "{:,.1f}%".format(expense_change|abs if expense_change is not none else 0) }} from last month
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card kpi-card profit h-100">
+        <div class="card-body">
+          <div class="small-muted">Net Profit</div>
+          <div class="kpi-value">KES {{ "{:,.2f}".format(profit_loss or 0) }}</div>
+          <div class="kpi-sub">
+            <i class="fas fa-arrow-{{ 'up' if profit_change >= 0 else 'down' }} text-{{ 'success' if profit_change >= 0 else 'danger' }}"></i>
+            {{ "{:,.1f}%".format(profit_change|abs if profit_change is not none else 0) }} from last month
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
-  <div class="card">
-    <h3>Total Expenses</h3>
-    <p class="text-2xl text-red-600">KES {{ "%.2f"|format(total_expenses) }}</p>
+
+  <!-- Charts -->
+  <div class="row g-3 mb-4">
+    <div class="col-lg-8">
+      <div class="card chart-card">
+        <div class="card-header">Collections vs Expenses</div>
+        <div class="card-body">
+          <canvas id="mainFinanceChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card chart-card">
+        <div class="card-header">Expense Breakdown</div>
+        <div class="card-body">
+          <canvas id="expenseDoughnut"></canvas>
+        </div>
+      </div>
+    </div>
   </div>
-  <div class="card">
-    <h3>Profit / Loss</h3>
-    <p class="text-2xl {% if profit >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
-      KES {{ "%.2f"|format(profit) }}
-    </p>
+
+  <!-- Expenses Table -->
+  <div class="row g-3 mb-4">
+    <div class="col-lg-12">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">All Expenses</h5>
+          <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#addExpenseModal">
+            <i class="fas fa-plus me-1"></i> Add Expense
+          </button>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Date</th>
+                  <th>Category</th>
+                  <th>Vehicle</th>
+                  <th>Description</th>
+                  <th class="text-end">Amount</th>
+                  <th>Receipt</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% if expenses %}
+                  {% for e in expenses|sort(attribute='date', reverse=True) %}
+                  <tr>
+                    <td>{{ e.date.strftime('%b %d, %Y') }}</td>
+                    <td><span class="badge bg-secondary badge-cat">{{ e.category }}</span></td>
+                    <td>{{ e.vehicle.plate_number if e.vehicle else '—' }}</td>
+                    <td>{{ e.description or '' }}</td>
+                    <td class="text-end">KES {{ "{:,.2f}".format(e.amount) }}</td>
+                    <td>
+                    {% if e.receipt_number %}
+                      <a href="{{ url_for('static', filename='uploads/' ~ e.receipt_number) }}" target="_blank" class="btn btn-sm btn-outline-info">
+                        <i class="fas fa-receipt"></i>
+                      </a>
+                    {% else %}
+                      <span class="small-muted">No receipt</span>
+                    {% endif %}
+                  </td>
+
+                    <td>
+                      <!-- Prefill modal via data-* -->
+                      <button class="btn btn-sm btn-outline-primary" 
+                        onclick="editExpense(this)"
+                        data-id="{{ e.id }}"
+                        data-date="{{ e.date }}"
+                        data-category="{{ e.category }}"
+                        data-description="{{ e.description }}"
+                        data-vehicle="{{ e.vehicle.id if e.vehicle else '' }}"
+                        data-amount="{{ e.amount }}"
+                        data-notes="{{ e.notes }}">
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <form method="POST" action="{{ url_for('routes.delete_expense_route', expense_id=e.id) }}" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this expense?')">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </form>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr><td colspan="7" class="text-center py-4">No expense records found</td></tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
-</section>
 
-<section class="card mb-6">
-  <h3>Revenue Breakdown by Month</h3>
-  <table class="table">
-    <thead>
-      <tr>
-        <th>Month</th>
-        <th>Total Revenue</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for month, revenue in monthly_revenue.items() %}
-      <tr><td>{{ month }}</td><td>KES {{ "%.2f"|format(revenue) }}</td></tr>
-      {% else %}
-      <tr><td colspan="2" class="text-center">No revenue data</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</section>
+  <!-- Collections Table -->
+  <div class="row g-3">
+    <div class="col-lg-12">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Recent Collections</h5>
+          <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addCollectionModal">
+            <i class="fas fa-plus me-1"></i> Add Collection
+          </button>
+            <a href="{{ url_for('routes.admin_past_records') }}" class="btn btn-sm btn-outline-secondary">
+    <i class="fas fa-history me-1"></i> Past Records
+  </a>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Date</th>
+                  <th>Driver</th>
+                  <th>Vehicle</th>
+                  <th class="text-end">Trips</th>
+                  <th class="text-end">Amount (KES)</th>
+                  <th>Notes</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% if recent_collections %}
+                  {% for c in recent_collections %}
+                  <tr>
+                    <td>{{ c.date.strftime('%b %d, %Y') }}</td>
+                    <td>{{ c.driver.name if c.driver else '—' }}</td>
+                    <td>{{ c.vehicle.plate_number if c.vehicle else '—' }}</td>
+                    <td class="text-end">{{ c.trips or 0 }}</td>
+                    <td class="text-end">KES {{ "{:,.2f}".format(c.amount) }}</td>
+                    <td>{{ c.notes }}</td>
+                    <td>
+                      <button class="btn btn-sm btn-outline-primary" 
+                        onclick="editCollection(this)"
+                        data-id="{{ c.id }}"
+                        data-date="{{ c.date }}"
+                        data-driver="{{ c.driver.id if c.driver else '' }}"
+                        data-vehicle="{{ c.vehicle.id if c.vehicle else '' }}"
+                        data-trips="{{ c.trips }}"
+                        data-amount="{{ c.amount }}"
+                        data-notes="{{ c.notes }}">
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <form method="POST" action="{{ url_for('routes.delete_collection_route', collection_id=c.id) }}" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this collection?')">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </form>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr><td colspan="7" class="text-center py-4">No collection records found</td></tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-<section class="card mb-6">
-  <h3>Driver & Vehicle Collections</h3>
-  <a href="{{ url_for('routes.download_finance_pdf') }}" class="btn primary mb-3">⬇️ Download Report</a>
-  <table class="table">
-    <thead>
-      <tr><th>Date</th><th>Driver</th><th>Vehicle</th><th>Amount (KES)</th></tr>
-    </thead>
-    <tbody>
-      {% for c in collections %}
-      <tr>
-        <td>{{ c.date }}</td>
-        <td>{{ c.driver_name }}</td>
-        <td>{{ c.vehicle_plate }}</td>
-        <td>{{ "%.2f"|format(c.amount) }}</td>
-      </tr>
-      {% else %}
-      <tr><td colspan="4" class="text-center">No collection records</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</section>
+<!-- Add/Edit Collection Modal -->
+<div class="modal fade" id="addCollectionModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <form id="collectionForm" method="POST" action="{{ url_for('routes.admin_finance') }}" class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add/Edit Collection</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="collection_id" id="collection_id">
+        <div class="mb-3">
+          <label class="form-label">Date</label>
+          <input type="date" class="form-control" id="collection_date" name="date" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Driver</label>
+          <select class="form-select" id="driver_id" name="driver_id" required>
+            <option value="">Select Driver</option>
+            {% for driver in drivers %}
+            <option value="{{ driver.id }}">{{ driver.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Vehicle</label>
+          <select class="form-select" id="vehicle_id" name="vehicle_id" required>
+            <option value="">Select Vehicle</option>
+            {% for vehicle in vehicles %}
+            <option value="{{ vehicle.id }}">{{ vehicle.plate_number }} ({{ vehicle.make }} {{ vehicle.model }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Trips</label>
+            <input type="number" class="form-control" id="trips" name="trips" min="1" required>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Amount (KES)</label>
+            <div class="input-group">
+              <span class="input-group-text">KES</span>
+              <input type="number" class="form-control" id="amount" name="amount" step="0.01" min="0" required>
+            </div>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Notes</label>
+          <textarea class="form-control" id="notes" name="notes" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Collection</button>
+      </div>
+    </form>
+  </div>
+</div>
 
-<section class="card">
-  <h3>Revenue Chart</h3>
-  <canvas id="revenueChart" height="100"></canvas>
-</section>
+<!-- Add/Edit Expense Modal -->
+<div class="modal fade" id="addExpenseModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <form id="expenseForm" method="POST" action="{{ url_for('routes.admin_finance') }}" enctype="multipart/form-data" class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add/Edit Expense</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="expense_id" id="expense_id">
+        <div class="mb-3">
+          <label class="form-label">Date</label>
+          <input type="date" class="form-control" id="expense_date" name="date" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Vehicle (Optional)</label>
+          <select class="form-select" id="vehicle_id_exp" name="vehicle_id">
+            <option value="">Select Vehicle</option>
+            {% for v in vehicles %}
+              <option value="{{ v.id }}">{{ v.plate_number }} ({{ v.make }} {{ v.model }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Category</label>
+          <select class="form-select" id="category" name="category" required>
+            <option value="">Select Category</option>
+            <option>Fuel</option>
+            <option>Maintenance</option>
+            <option>Repairs</option>
+            <option>Insurance</option>
+            <option>License</option>
+            <option>Salaries</option>
+            <option>Office</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Description</label>
+          <input type="text" class="form-control" id="description" name="description" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Amount (KES)</label>
+          <div class="input-group">
+            <span class="input-group-text">KES</span>
+            <input type="number" class="form-control" id="expense_amount" name="amount" step="0.01" min="0" required>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Receipt (Optional)</label>
+          <input class="form-control" type="file" id="receipt" name="receipt" accept=".jpg,.jpeg,.png,.pdf">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Notes</label>
+          <textarea class="form-control" id="expense_notes" name="notes" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-danger">Save Expense</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
 
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const chartElement = document.getElementById("revenueChart");
-    if (!chartElement) {
-      console.error("Chart element not found!");
-      return;
-    }
-    
-    const ctx = chartElement.getContext("2d");
-    
-    try {
-      // Debug: Log the raw template data
-      const rawData = '{{ chart_data|tojson|safe }}';
-      console.log("Raw template data:", rawData);
-      
-      // Parse the JSON data
-      let chartData;
-      try {
-        chartData = JSON.parse(rawData);
-        console.log("Parsed chart data:", chartData);
-      } catch (parseError) {
-        console.error("Error parsing chart data:", parseError);
-        throw new Error("Invalid chart data format");
-      }
-      
-      if (!Array.isArray(chartData)) {
-        console.error("Chart data is not an array:", chartData);
-        throw new Error("Expected chart data to be an array");
-      }
-      
-      if (chartData.length > 0) {
-        // Extract months and revenues
-        const months = chartData.map(function(item) { return item.month; });
-        const revenues = chartData.map(function(item) { return item.revenue; });
-        
-        new Chart(ctx, {
-          type: "bar",
-          data: {
-            labels: months,
-            datasets: [{
-              label: "Revenue (KES)",
-              data: revenues,
-              backgroundColor: "rgba(54, 162, 235, 0.7)",
-              borderColor: "rgba(54, 162, 235, 1)",
-              borderWidth: 1,
-              borderRadius: 4,
-              barPercentage: 0.8
-            }]
-          },
-          options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        y: {
-          beginAtZero: true,
-          ticks: {
-            callback: function(value) {
-              return 'KES ' + value.toLocaleString();
-            }
-          },
-          grid: {
-            display: true,
-            color: 'rgba(0, 0, 0, 0.05)'
-          }
-        },
-        x: {
-          grid: {
-            display: false
-          }
-        }
-      },
-      plugins: {
-        tooltip: {
-          callbacks: {
-            label: function(context) {
-              return 'KES ' + context.parsed.y.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            }
-          }
-        }
-      }
-        });
-      } else {
-        console.log("No chart data available");
-        chartElement.innerHTML = "<p class='text-center p-4 text-gray-500'>No revenue data available for chart</p>";
-      }
-    } catch (error) {
-      console.error("Error initializing chart:", error);
-      const errorMessage = error.message || 'Unknown error occurred';
-      console.error("Error details:", error);
-      chartElement.innerHTML = `
-        <div class='p-4 text-center'>
-          <p class='text-red-500 font-medium'>Error loading chart data</p>
-          <p class='text-sm text-gray-600 mt-1'>${errorMessage}</p>
-          <p class='text-xs text-gray-500 mt-2'>Check console for details (F12 > Console)</p>
-        </div>`;
-    }
-  });
+const chartData = {{ chart_data|tojson|safe }};
+const otherExpenses = {{ other_expenses_data|tojson|safe }};
+
+// Line Chart: Collections vs Expenses
+const ctxLine = document.getElementById('mainFinanceChart').getContext('2d');
+new Chart(ctxLine, {
+    type: 'line',
+    data: {
+        labels: chartData.labels,
+        datasets: [
+            { label: 'Collections', data: chartData.collections, borderColor: '#4CAF50', backgroundColor: 'rgba(76,176,80,0.1)', tension: 0.3, fill: true },
+            { label: 'Expenses', data: chartData.expenses, borderColor: '#F44336', backgroundColor: 'rgba(244,67,54,0.1)', tension: 0.3, fill: true }
+        ]
+    },
+    options: { responsive: true, maintainAspectRatio: false }
+});
+
+// Doughnut Chart: Expense Breakdown
+const ctxDoughnut = document.getElementById('expenseDoughnut').getContext('2d');
+new Chart(ctxDoughnut, {
+    type: 'doughnut',
+    data: {
+        labels: otherExpenses.labels,
+        datasets: [{ data: otherExpenses.data, backgroundColor: ['#4CAF50','#F44336','#2196F3','#FFC107','#9C27B0','#00BCD4','#FF5722','#795548'] }]
+    },
+    options: { responsive: true, maintainAspectRatio: false }
+});
+
+// Prefill modals for editing
+function editExpense(button) {
+  // Fill hidden ID field
+  document.getElementById('expense_id').value = button.dataset.id;
+
+  // Fill modal fields
+  document.getElementById('expense_date').value = button.dataset.date;
+  document.getElementById('category').value = button.dataset.category;
+  document.getElementById('description').value = button.dataset.description;
+  document.getElementById('vehicle_id_exp').value = button.dataset.vehicle;
+  document.getElementById('expense_amount').value = button.dataset.amount;
+
+  // Optional: reset receipt input so user can upload new file if needed
+  document.getElementById('receipt').value = '';
+
+  // Show the modal
+  const modal = new bootstrap.Modal(document.getElementById('addExpenseModal'));
+  modal.show();
+}
+
+function editCollection(button){
+  document.getElementById('collection_id').value = button.dataset.id;
+  document.getElementById('collection_date').value = button.dataset.date;
+  document.getElementById('driver_id').value = button.dataset.driver;
+  document.getElementById('vehicle_id').value = button.dataset.vehicle;
+  document.getElementById('trips').value = button.dataset.trips;
+  document.getElementById('amount').value = button.dataset.amount;
+  document.getElementById('notes').value = button.dataset.notes || '';
+  const modal = new bootstrap.Modal(document.getElementById('addCollectionModal'));
+  modal.show();
+}
 </script>
 {% endblock %}

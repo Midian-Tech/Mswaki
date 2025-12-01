@@ -1,0 +1,109 @@
+{% extends 'admin_base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Edit Vehicle: {{ vehicle.plate_number }}</h2>
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form action="{{ url_for('routes.update_vehicle') }}" method="POST" class="mt-3">
+        <input type="hidden" name="vehicle_id" value="{{ vehicle.id }}">
+
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Plate Number</label>
+                <input type="text" name="plate_number" class="form-control" value="{{ vehicle.plate_number }}" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Make</label>
+                <input type="text" name="make" class="form-control" value="{{ vehicle.make }}" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Model</label>
+                <input type="text" name="model" class="form-control" value="{{ vehicle.model }}" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Year</label>
+                <input type="number" name="year" class="form-control" value="{{ vehicle.year }}" required>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Capacity</label>
+                <input type="number" name="capacity" class="form-control" value="{{ vehicle.capacity }}" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Driver</label>
+                <select name="driver_id" class="form-select">
+                    <option value="">-- Unassigned --</option>
+                    {% for driver in drivers %}
+                        <option value="{{ driver.id }}" {% if vehicle.driver_id == driver.id %}selected{% endif %}>
+                            {{ driver.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <input type="text" name="status" class="form-control" value="{{ vehicle.status }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Fuel Type</label>
+                <input type="text" name="fuel_type" class="form-control" value="{{ vehicle.fuel_type }}">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Transmission</label>
+                <input type="text" name="transmission" class="form-control" value="{{ vehicle.transmission }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Color</label>
+                <input type="text" name="color" class="form-control" value="{{ vehicle.color }}">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Insurance Number</label>
+                <input type="text" name="insurance_number" class="form-control" value="{{ vehicle.insurance_number }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Insurance Expiry</label>
+                <input type="date" name="insurance_expiry" class="form-control" value="{{ vehicle.insurance_expiry }}">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Registration Number</label>
+                <input type="text" name="registration_number" class="form-control" value="{{ vehicle.registration_number }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Registration Expiry</label>
+                <input type="date" name="registration_expiry" class="form-control" value="{{ vehicle.registration_expiry }}">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Odometer Reading</label>
+                <input type="number" name="odometer_reading" class="form-control" value="{{ vehicle.odometer_reading }}">
+            </div>
+        </div>
+
+        <div class="mt-3">
+            <label class="form-label">Notes</label>
+            <textarea name="notes" class="form-control">{{ vehicle.notes }}</textarea>
+        </div>
+
+        <div class="mt-3">
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+            <a href="{{ url_for('routes.admin_vehicles') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

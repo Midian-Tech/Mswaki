@@ -4,23 +4,105 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mswaki — Book a Ride</title>
+  <style>
+    /* Reset & Base */
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+    body { background: url('/static/images/mswaki.jpg') center/cover no-repeat fixed; color: #fff; min-height: 100vh; }
+    a { text-decoration: none; color: inherit; }
 
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    /* Navbar */
+    nav {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1rem 2rem; background: rgba(0,0,0,0.7); position: sticky; top:0; z-index: 1000;
+    }
+    nav .brand { font-size: 1.8rem; font-weight: 700; color: #00aaff; }
+    nav .nav-links { display: flex; gap: 1rem; align-items: center; }
+    nav .nav-links a { padding: 0.5rem 1rem; border-radius: 6px; transition: 0.3s; }
+    nav .nav-links a:hover, nav .btn-primary:hover { background: #00aaff; color: #000; }
+    nav .btn-primary { background: #00aaff; color: #000; font-weight: 600; }
+    .hamburger { display: none; flex-direction: column; cursor: pointer; gap: 5px; }
+    .hamburger span { width: 25px; height: 3px; background: #00aaff; border-radius: 2px; }
 
+    /* Hero Section */
+   
+    .hero::after {
+      content: ""; position: absolute; top:0; left:0; right:0; bottom:0;
+      background: rgba(0,0,0,0.5);
+    }
+    .hero h1, .hero p { position: relative; z-index:1; }
+    .hero h1 { font-size: 2.5rem; margin-bottom: 1rem; color: #00aaff; }
+    .hero p { font-size: 1.2rem; }
+
+    /* Booking Form */
+    .booking-section {
+      max-width: 700px; margin: 2rem auto 4rem;
+      padding: 2rem; background: rgba(0,0,0,0.7); border-radius: 15px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    }
+    .booking-section form div { margin-bottom: 1.5rem; display: flex; flex-direction: column; }
+    .booking-section label { margin-bottom: 0.5rem; font-weight: 600; color: #00aaff; }
+    .booking-section input, .booking-section select, .booking-section textarea {
+      padding: 0.8rem; border-radius: 8px; border: none; font-size: 1rem;
+    }
+    .booking-section input:focus, .booking-section select:focus, .booking-section textarea:focus {
+      outline: 2px solid #00aaff; box-shadow: 0 0 5px rgba(0,170,255,0.3);
+    }
+    .booking-section button {
+      background: #00aaff; color: #000; border: none; padding: 0.8rem 1.5rem;
+      font-size: 1rem; border-radius: 10px; cursor: pointer; font-weight: 700; transition: 0.3s;
+    }
+    .booking-section button:hover { background: #0077cc; color: #fff; }
+
+    /* Footer */
+    footer { text-align: center; padding: 1.5rem 0; background: rgba(0,0,0,0.7); color: #aaa; font-size: 0.9rem; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+  .hamburger {
+    display: flex;
+  }
+
+  .nav-links {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: rgba(0,0,0,0.8);
+    flex-direction: column;
+    width: 200px;
+    display: none; /* <-- hide initially */
+    padding: 1rem;
+  }
+
+  .nav-links.active {
+    display: flex; /* <-- show only when active */
+  }
+
+  .nav-links a {
+    margin: 0.5rem 0;
+  }
+}
+.nav-links {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.nav-links.active {
+  max-height: 500px; /* enough to show all links */
+}
+  </style>
 </head>
 <body>
 
-  <!-- NAVBAR -->
+  <!-- Navbar -->
   <nav>
     <a href="{{ url_for('routes.user_dashboard') }}" class="brand">Mswaki</a>
-    <div class="hamburger">
-    <span></span>
-    <span></span>
-    <span></span>
-  </div>
-    <div class="nav-links">
+    <div class="hamburger" onclick="toggleMenu()">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    <div class="nav-links" id="navLinks">
       <a href="{{ url_for('routes.user_dashboard') }}">Home</a>
       <a href="{{ url_for('routes.book_vehicle') }}">Book Ride</a>
       <a href="{{ url_for('routes.report_misbehavior') }}">Report</a>
@@ -30,69 +112,46 @@
     </div>
   </nav>
 
-  <!-- HERO -->
-  <section class="hero">
-    <h1>Book Your Ride with Mswaki</h1>
-    <p>Choose from available vehicles and plan your next trip with comfort and convenience.</p>
-  </section>
 
-  <!-- BOOKING FORM -->
+  <!-- Booking Form -->
   <section class="booking-section">
     <form method="POST" action="{{ url_for('routes.book_vehicle') }}">
+      <form method="POST" action="{{ url_for('routes.book_vehicle') }}">
+  <div>
+    <label for="seats">Total Seats to Book</label>
+    <input type="number" name="seats" id="seats" placeholder="Enter number of seats" min="1" required>
+  </div>
 
-      <div>
-        <label for="vehicle">Select Available Vehicle</label>
+  <div>
+    <label for="pickup">Pickup Point</label>
+    <input type="text" name="pickup" id="pickup" placeholder="Enter pickup location" required>
+  </div>
 
-        {% if available_vehicles %}
-          <select name="vehicle_id" id="vehicle" required>
-            <option value="">-- Select Vehicle --</option>
+  <div>
+    <label for="destination">Destination</label>
+    <input type="text" name="destination" id="destination" placeholder="Enter destination" required>
+  </div>
 
-            {% for v in available_vehicles %}
-              <option value="{{ v.id }}">
-                {{ v.plate_number }}
-                (Driver: {{ v.driver.name if v.driver else "No Driver Assigned" }})
-              </option>
-            {% endfor %}
-          </select>
-        {% else %}
-          <select disabled>
-            <option>No vehicles available at the moment</option>
-          </select>
-        {% endif %}
-      </div>
+  <div>
+    <label for="reason">Reason for Hire</label>
+    <textarea name="reason" id="reason" rows="3" placeholder="Business trip, personal travel, etc." required></textarea>
+  </div>
 
-      <div>
-        <label for="pickup">Pickup Point</label>
-        <input type="text" name="pickup" id="pickup" placeholder="Enter pickup location" required>
-      </div>
+  <button type="submit">Confirm Booking</button>
+</form>
 
-      <div>
-        <label for="destination">Destination</label>
-        <input type="text" name="destination" id="destination" placeholder="Enter destination" required>
-      </div>
-
-      <div>
-        <label for="reason">Reason for Hire</label>
-        <textarea name="reason" id="reason" rows="3" placeholder="Business trip, personal travel, etc." required></textarea>
-      </div>
-
-      <button type="submit" class="btn btn-primary">Confirm Booking</button>
-    </form>
   </section>
 
   <footer>
-    <p>© {{ current_year or 2025 }} Mswaki Transport. All rights reserved.</p>
+    <p>© {{ current_year or 2025 }} Mswaki Transport. All Rights Reserved</p>
   </footer>
-<script>
-const hamburger = document.querySelector('.hamburger');
-const navLinks = document.querySelector('.nav-links');
 
-hamburger.addEventListener('click', () => {
-  hamburger.classList.toggle('active');
-  navLinks.classList.toggle('active');
-});
-</script>
-
+  <script>
+    function toggleMenu() {
+      const nav = document.getElementById('navLinks');
+      nav.classList.toggle('active');
+    }
+  </script>
 
 </body>
 </html>

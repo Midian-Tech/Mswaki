@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact – Mswaki Transport</title>
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+
+<body>
+
+<nav>
+  <a href="{{ url_for('routes.user_dashboard') }}" class="brand">Mswaki</a>
+
+  <div class="hamburger"><span></span><span></span><span></span></div>
+
+  <div class="nav-links">
+      <a href="{{ url_for('routes.user_dashboard') }}">Home</a>
+      <a href="{{ url_for('routes.about') }}">About Us</a>
+      <a href="{{ url_for('routes.gallery') }}">Gallery</a>
+      <a href="{{ url_for('routes.book_vehicle') }}">Book Ride</a>
+      <a class="active" href="{{ url_for('routes.contact_team') }}">Contact Team</a>
+      <a href="{{ url_for('routes.report_misbehavior') }}">Report</a>
+      {% if current_user.is_authenticated %}
+      <a href="{{ url_for('routes.logout') }}" class="btn btn-primary">Logout</a>
+      {% endif %}
+  </div>
+</nav>
+
+<section class="hero contact-hero">
+  <h1>Contact Our Team</h1>
+  <p>We're here to help anytime.</p>
+</section>
+
+<section class="contact-page">
+  <form class="contact-form" method="POST" action="{{ url_for('routes.send_message') }}">
+    <input type="text" placeholder="Your Name" name="name" required>
+    <input type="email" placeholder="Your Email" name="email" required>
+    <textarea name="message" placeholder="Your Message" required></textarea>
+    <button type="submit" class="btn btn-primary">Send Message</button>
+  </form>
+</section>
+
+<footer class="footer">
+  <p>{{ current_year or 2025 }} Mswaki Transport. All rights reserved.</p>
+</footer>
+
+<script>
+const hamburger = document.querySelector('.hamburger');
+const navLinks = document.querySelector('.nav-links');
+hamburger.addEventListener('click', () => {
+  hamburger.classList.toggle('active');
+  navLinks.classList.toggle('active');
+});
+</script>
+
+</body>
+</html>

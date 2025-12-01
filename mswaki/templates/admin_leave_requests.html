@@ -1,0 +1,91 @@
+{% extends "admin_base.html" %}
+
+{% block title %}Leave Requests - Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-sm-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Leave Requests</h1>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">All Leave Requests</h6>
+        </div>
+        <div class="mb-3">
+    <form action="{{ url_for('routes.approve_all_leaves') }}" method="POST" class="d-inline">
+        <button type="submit" class="btn btn-success" onclick="return confirm('Are you sure you want to approve all pending leave requests?')">
+            <i class="fas fa-check-circle"></i> Approve All Pending
+        </button>
+    </form>
+</div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="leaveRequestsTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Driver</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Reason</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for request in leave_requests %}
+                        <tr>
+                            <td>{{ request.driver.name if request.driver else 'N/A' }}</td>
+                            <td>{{ request.start_date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ request.end_date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ request.reason or 'N/A' }}</td>
+                            <td>
+                                <span class="badge 
+                                    {% if request.status == 'approved' %}bg-success
+                                    {% elif request.status == 'rejected' %}bg-danger
+                                    {% else %}bg-warning{% endif %}">
+                                    {{ request.status|title }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <form action="{{ url_for('routes.approve_leave', leave_id=request.id) }}" method="POST" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-success" {% if request.status != 'pending' %}disabled{% endif %}>Approve</button>
+                                    </form>
+                                    <form action="{{ url_for('routes.reject_leave', leave_id=request.id) }}" method="POST" class="d-inline ms-1">
+                                        <button type="submit" class="btn btn-sm btn-danger" {% if request.status != 'pending' %}disabled{% endif %}>Reject</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center">No leave requests found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<!-- Page level plugins -->
+<script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap4.min.js"></script>
+
+<!-- Page level custom scripts -->
+<script>
+    $(document).ready(function() {
+        $('#leaveRequestsTable').DataTable({
+            "order": [[1, "desc"]],
+            "columnDefs": [
+                { "orderable": false, "targets": [4, 5] }
+            ]
+        });
+    });
+</script>
+{% endblock %}
