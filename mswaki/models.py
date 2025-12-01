@@ -76,25 +76,21 @@ class Vehicle(db.Model):
 
 class Booking(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    
-    # Link to the user who made the booking
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    
-   
     seats = db.Column(db.Integer, nullable=False)
-    
     pickup = db.Column(db.String(100), nullable=False)
     destination = db.Column(db.String(100), nullable=False)
     route = db.Column(db.String(100))  # optional
     reason = db.Column(db.String(200))
-    
     status = db.Column(db.String(50), default="Pending")
+    
     booking_date = db.Column(db.DateTime)  # when the ride is requested
+    travel_date = db.Column(db.Date)       # new: day of travel
+    travel_time = db.Column(db.Time)       # new: time of travel
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    rejection_reason = db.Column(db.String(200))
 
-    # Relationships
     user = db.relationship("User", backref="bookings")
-
 class Maintenance(db.Model):
     __tablename__ = "maintenance"
 

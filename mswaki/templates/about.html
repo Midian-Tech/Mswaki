@@ -1,82 +1,135 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>About — Mswaki Transport</title>
 
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <style>
-    /* Reset and base */
+    :root {
+      --primary: #0369a1;
+      --light: #ffffff;
+      --dark: #00293e;
+    }
+
     * { margin:0; padding:0; box-sizing:border-box; font-family:'Poppins',sans-serif; }
 
-    body {
-      background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url("/static/images/mswaki.jpg") no-repeat center center fixed;
-      background-size: cover; 
-      color:#fff; 
-      min-height:100vh;
-    }
+    body { background: #f8fafc; color: var(--dark); }
 
     /* Navbar */
-    nav { display:flex; justify-content:space-between; align-items:center; padding:1rem 2rem; background:rgba(0,0,0,0.7); position:relative; }
-    nav .brand { font-size:1.8rem; font-weight:700; color:#00aaff; text-decoration:none; }
-    nav .nav-links { display:flex; gap:1rem; align-items:center; }
-    nav .nav-links a { color:#fff; padding:0.5rem 1rem; border-radius:5px; transition:0.3s; text-decoration:none; }
-    nav .nav-links a:hover, nav .nav-links a.active { background:#00aaff; color:#000; }
-    nav .btn-primary { background:#00aaff; color:#000; font-weight:600; }
-    .hamburger { display:none; flex-direction:column; cursor:pointer; gap:5px; }
-    .hamburger span { width:25px; height:3px; background:#00aaff; border-radius:2px; }
+    nav {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      padding: 1rem 2rem;
+      background: rgba(3,105,161,0.9);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1000;
+    }
 
-    /* Responsive Navbar */
-    @media (max-width: 768px) {
-  .hamburger {
-    display: flex;
-  }
+    nav .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #00aaff;
+      text-decoration: none;
+    }
 
-  .nav-links {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    background: rgba(0,0,0,0.8);
-    flex-direction: column;
-    width: 200px;
-    display: none; /* <-- hide initially */
-    padding: 1rem;
-  }
+    /* User icon and name */
+    .user-brand i {
+      font-size: 1.5rem;
+    }
+    .user-brand .user-name {
+      font-size: 0.65rem;
+      margin-top: 2px;
+      white-space: nowrap;
+      color: #fff;
+    }
+    .brand-text {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-left: 8px;
+    }
 
-  .nav-links.active {
-    display: flex; /* <-- show only when active */
-  }
+    .nav-links {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
 
-  .nav-links a {
-    margin: 0.5rem 0;
-  }
-}
-.nav-links {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.3s ease;
-}
+    .nav-links a {
+      color: var(--light);
+      padding: 6px 12px;
+      text-decoration: none;
+      border-radius: 4px;
+      transition: 0.3s;
+    }
 
-.nav-links.active {
-  max-height: 500px; /* enough to show all links */
-}
+    .nav-links a:hover, .nav-links a.active { background: rgba(255,255,255,0.2); }
 
-    /* Header */
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 4px;
+      cursor: pointer;
+    }
+    .hamburger span { width: 26px; height: 3px; background: #fff; }
+
+    @media(max-width: 820px) {
+      .nav-links {
+        flex-direction: column;
+        background: var(--primary);
+        position: absolute;
+        top: 70px;
+        right: 10px;
+        width: 200px;
+        padding: 1rem;
+        border-radius: 10px;
+        display: none;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+      }
+      .nav-links.active { display: flex; max-height: 500px; }
+      .hamburger { display: flex; }
+    }
+
+    /* Hero Section */
     .hero-header {
+      margin-top: 70px;
       padding: 6rem 2rem;
       text-align: center;
-      background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('/static/images/road.jpg') center/cover no-repeat;
+      background: url('/static/images/road.jpg') center/cover no-repeat fixed;
+      background-size: cover;
+      position: relative;
+      color: #fff;
     }
-    .hero-header h1 { font-size:2.5rem; margin-bottom:1rem; color:#00aaff; }
-    .hero-header p { font-size:1.1rem; max-width:700px; margin:auto; line-height:1.7; }
+    .hero-header::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+    }
+    .hero-header > * { position: relative; z-index: 2; }
+    .hero-header h1 { font-size: 2.5rem; margin-bottom: 1rem; color: gold; }
+    .hero-header p { font-size: 1.1rem; max-width:700px; margin:auto; line-height:1.7; }
 
     /* Container sections */
-    .container { max-width:900px; margin:3rem auto; padding:2rem; background:rgba(0,0,0,0.7); border-radius:15px; box-shadow:0 0 20px rgba(0,0,0,0.5); }
-    .container h2 { text-align:center; margin-bottom:1rem; color:#00aaff; font-size:2rem; }
+    .container {
+      max-width: 900px;
+      margin: 3rem auto;
+      padding: 2rem;
+      background: rgba(255,255,255,0.95);
+      border-radius: 15px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+      color: var(--dark);
+    }
+    .container h2 { text-align:center; margin-bottom:1rem; color:var(--primary); font-size:2rem; }
     .container p { text-align:center; margin-bottom:1.5rem; font-size:1rem; line-height:1.6; }
 
     /* Features Grid */
@@ -87,16 +140,17 @@
       margin-top:2rem;
     }
     .feature-card {
-      background:rgba(255,255,255,0.1);
+      background: #f1f5f9;
       padding:1.5rem;
       border-radius:12px;
       text-align:center;
       transition:0.3s;
+      cursor: pointer;
     }
-    .feature-card:hover { transform: translateY(-5px); background:rgba(0,170,255,0.2); }
-    .feature-card i { font-size:35px; color:#00aaff; margin-bottom:10px; }
+    .feature-card:hover { transform: translateY(-5px); background: #dbeafe; }
+    .feature-card i { font-size:35px; color:var(--primary); margin-bottom:10px; }
     .feature-card h3 { margin-bottom:0.5rem; }
-    .feature-card p { font-size:0.95rem; color:#ddd; }
+    .feature-card p { font-size:0.95rem; color:#333; }
 
     /* Team Grid */
     .team-grid {
@@ -106,55 +160,75 @@
       margin-top:2rem;
     }
     .team-card {
-      background:rgba(255,255,255,0.1);
+      background: #f1f5f9;
       padding:1.5rem;
       border-radius:12px;
       text-align:center;
-      box-shadow:0 4px 10px rgba(0,0,0,0.3);
+      box-shadow:0 4px 10px rgba(0,0,0,0.1);
       transition:0.3s;
+      cursor: pointer;
     }
-    .team-card:hover { background:rgba(0,170,255,0.2); }
-    .team-card img {
-      width:100px; height:100px;
-      border-radius:50%;
-      object-fit:cover;
-      margin-bottom:10px;
-    }
-    .team-card h4 { margin:0.5rem 0; color:#00aaff; }
-    .team-card p { color:#ddd; font-size:0.9rem; }
+    .team-card:hover { background: #dbeafe; }
+    .team-card img { width:100px; height:100px; border-radius:50%; object-fit:cover; margin-bottom:10px; }
+    .team-card h4 { margin:0.5rem 0; color:var(--primary); }
+    .team-card p { color:#333; font-size:0.9rem; }
 
-    /* Footer */
-    footer { text-align:center; margin:3rem 0 1rem; padding:1rem; background:rgba(0,0,0,0.7); color:#aaa; font-size:0.9rem; }
+    footer {
+      text-align:center;
+      margin:3rem 0 1rem;
+      padding:1rem;
+      background:#0369a1;
+      color:#fff;
+      font-size:0.9rem;
+    }
   </style>
-
 </head>
+
 <body>
 
 <nav>
-  <a href="{{ url_for('routes.user_dashboard') }}" class="brand">Mswaki</a>
+  <a href="{{ url_for('routes.user_dashboard') }}" class="brand">
+    <div class="user-brand">
+      <i class="fa fa-user"></i>
+      <div class="user-name">{{ current_user.name if current_user.is_authenticated else 'Guest' }}</div>
+    </div>
+    <div class="brand-text">Mswaki Transport</div>
+  </a>
+
   <div class="hamburger" onclick="toggleMenu()">
     <span></span>
     <span></span>
     <span></span>
   </div>
+
   <div class="nav-links" id="navLinks">
-    <a href="{{ url_for('routes.user_dashboard') }}">Home</a>
+    <a href="{{ url_for('routes.user_dashboard') if current_user.is_authenticated else url_for('routes.home') }}">Home</a>
     <a href="{{ url_for('routes.about') }}" class="active">About Us</a>
     <a href="{{ url_for('routes.gallery') }}">Gallery</a>
-    <a href="{{ url_for('routes.book_vehicle') }}">Book Ride</a>
-    <a href="{{ url_for('routes.contact_team') }}">Contact Team</a>
-    <a href="{{ url_for('routes.report_misbehavior') }}">Report</a>
+
     {% if current_user.is_authenticated %}
+      <a href="{{ url_for('routes.book_vehicle') }}">Book Ride</a>
+      <a href="{{ url_for('routes.my_bookings') }}">My Bookings</a>
+      <a href="{{ url_for('routes.contact_team') }}">Contact Team</a>
+      <a href="{{ url_for('routes.report_misbehavior') }}">Report</a>
       <a href="{{ url_for('routes.logout') }}" class="btn btn-primary">Logout</a>
+    {% else %}
+      <a href="{{ url_for('routes.login') }}">Book Ride</a>
+      <a href="{{ url_for('routes.login') }}">My Bookings</a>
+      <a href="{{ url_for('routes.login') }}">Report</a>
+      <a href="{{ url_for('routes.login') }}" class="btn btn-primary">Login</a>
+      <a href="{{ url_for('routes.register') }}" class="btn btn-secondary">Sign Up</a>
     {% endif %}
   </div>
 </nav>
 
+<!-- Hero -->
 <header class="hero-header">
   <h1>About Mswaki Transport</h1>
   <p>We are redefining modern transport across Kenya with safety, efficiency, and comfort at the heart of every journey.</p>
 </header>
 
+<!-- Our Story -->
 <div class="container">
   <h2>Our Story</h2>
   <p>
@@ -164,6 +238,7 @@
   </p>
 </div>
 
+<!-- Why Choose Us -->
 <div class="container">
   <h2>Why Choose Mswaki?</h2>
   <div class="feature-grid">
@@ -185,6 +260,7 @@
   </div>
 </div>
 
+<!-- Team Section -->
 <div class="container">
   <h2>Meet Our Team</h2>
   <div class="team-grid">

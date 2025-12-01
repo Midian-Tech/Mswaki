@@ -3,10 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mswaki — User Dashboard</title>
+  <title>Mswaki — Welcome</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <style>
-    /* Reset and base styles */
+    :root {
+      --primary: #0369a1;
+      --light: #ffffff;
+      --dark: #00293e;
+    }
+
     * {
       margin: 0;
       padding: 0;
@@ -15,224 +21,289 @@
     }
 
     body {
-      background: url("/static/images/mswaki.jpg") no-repeat center center fixed;
-      background-size: cover;
-      color: #fff;
-      min-height: 100vh;
+      background: #f8fafc;
+      color: var(--dark);
     }
 
-    /* Navbar styling */
     nav {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      padding: 1rem 2rem;
+      background: rgba(3, 105, 161, 0.9);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 1rem 2rem;
-      background: rgba(0, 0, 0, 0.6);
-      position: relative;
-      z-index: 10;
+      z-index: 1000;
     }
 
     nav .brand {
-      font-size: 1.8rem;
+      font-size: 1.7rem;
+      color: var(--light);
       font-weight: 700;
-      color: #00aaff;
       text-decoration: none;
     }
 
-    nav .nav-links {
-      display: flex;
-      gap: 1rem;
-      align-items: center;
-    }
-
-    nav .nav-links a {
-      color: #fff;
+    nav a {
+      color: var(--light);
+      padding: 6px 12px;
+      margin-left: 6px;
       text-decoration: none;
-      padding: 0.5rem 1rem;
-      border-radius: 5px;
-      transition: background 0.3s, color 0.3s;
+      border-radius: 4px;
+      transition: 0.3s;
     }
 
-    nav .nav-links a:hover {
-      background: #00aaff;
-      color: #000;
+    nav a:hover {
+      background: rgba(255,255,255,0.2);
     }
 
-    nav .btn-primary {
-      background: #00aaff;
-      color: #000;
-      font-weight: 600;
-    }
+    .nav-links { display: flex; }
 
-    nav .btn-secondary {
-      background: transparent;
-      border: 1px solid #00aaff;
-      color: #00aaff;
-      font-weight: 600;
-    }
-
-    /* Hamburger for mobile */
     .hamburger {
       display: none;
       flex-direction: column;
+      gap: 4px;
       cursor: pointer;
-      gap: 5px;
     }
-
     .hamburger span {
-      width: 25px;
+      width: 26px;
       height: 3px;
-      background: #00aaff;
-      border-radius: 2px;
+      background: #fff;
     }
 
-    /* User Dropdown */
-    .user-dropdown {
+    @media(max-width: 820px) {
+      .nav-links {
+        display: none;
+        flex-direction: column;
+        background: var(--primary);
+        position: absolute;
+        top: 70px;
+        right: 10px;
+        width: 200px;
+        padding: 1rem;
+        border-radius: 10px;
+      }
+      .nav-links.active { display: flex; }
+      .hamburger { display: flex; }
+    }
+    .brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #00aaff;
+  text-decoration: none;
+}
+
+/* User icon */
+.user-brand i {
+  font-size: 1.5rem;        /* bigger icon */
+}
+
+/* User name */
+.user-brand .user-name {
+  font-size: 0.65rem;       /* smaller text */
+  margin-top: 2px;          /* small gap between icon & name */
+  white-space: nowrap; 
+  color:#ffffff;     /* prevent line breaks */
+}
+.brand-text {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+    .hero {
+      margin-top: 70px;
+      height: 85vh;
+      background: url('/static/images/road.jpg') center/cover no-repeat fixed;
+      position: relative;
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      margin-left: 1rem;
-    }
-
-    .user-dropdown span {
-      font-weight: 600;
-    }
-
-    .user-dropdown::before {
-      content: "🟢"; /* Green dot icon showing logged in */
-    }
-
-    /* Dashboard content */
-    .dashboard {
-      padding: 3rem 2rem;
+      justify-content: center;
       text-align: center;
-      background: rgba(0, 0, 0, 0.5);
-      margin: 2rem auto;
-      max-width: 1200px;
-      border-radius: 10px;
     }
 
-    .dashboard h1 {
-      font-size: 2.5rem;
-      margin-bottom: 1rem;
-      color: #00aaff;
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
     }
 
-    .dashboard p {
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      color: #fff;
+    }
+
+    .hero-content h1 {
+      font-size: 3rem;
+      margin-bottom: 0.8rem;
+      font-weight: 700;
+    }
+
+    .hero-content p {
       font-size: 1.2rem;
+      opacity: 0.95;
+      margin-bottom: 1.8rem;
+    }
+
+    .cta-btn {
+      background: var(--primary);
+      color: #fff;
+      font-weight: bold;
+      padding: 0.9rem 1.8rem;
+      border-radius: 10px;
+      text-decoration: none;
+      font-size: 1.2rem;
+      transition: 0.3s;
+    }
+    .cta-btn:hover {
+      background: #024c72;
+    }
+
+    .services {
+      max-width: 1200px;
+      margin: auto;
+      padding: 3rem 1rem;
+      text-align: center;
+    }
+
+    .services h2 {
+      font-size: 2rem;
+      color: var(--primary);
       margin-bottom: 2rem;
     }
 
-    .dashboard .cards {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 2rem;
-      justify-content: center;
+    .service-grid {
+      display: grid;
+      gap: 1.5rem;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     }
 
-    .dashboard .card {
-      background: rgba(255, 255, 255, 0.1);
+    .card {
+      background: #fff;
       padding: 2rem;
-      border-radius: 10px;
-      min-width: 250px;
-      flex: 1 1 250px;
-      transition: transform 0.3s, background 0.3s;
+      border-radius: 12px;
+      box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
       cursor: pointer;
+      transition: 0.3s;
     }
 
-    .dashboard .card:hover {
-      background: rgba(0, 170, 255, 0.3);
-      transform: translateY(-5px);
+    .card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0px 6px 14px rgba(0,0,0,0.15);
     }
 
-    /* Responsive */
-    /* Responsive */
-@media (max-width: 768px) {
-  .hamburger {
-    display: flex;
-  }
+    .card span {
+      font-size: 2rem;
+      margin-bottom: 10px;
+      display: block;
+    }
 
-  .nav-links {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    background: rgba(0,0,0,0.8);
-    flex-direction: column;
-    width: 200px;
-    display: none; /* <-- hide initially */
-    padding: 1rem;
-  }
-
-  .nav-links.active {
-    display: flex; /* <-- show only when active */
-  }
-
-  .nav-links a {
-    margin: 0.5rem 0;
-  }
-}
-.nav-links {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.3s ease;
-}
-
-.nav-links.active {
-  max-height: 500px; /* enough to show all links */
-}
-
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      margin-top: 3rem;
+      font-size: 0.9rem;
+      color: #666;
+    }
   </style>
 </head>
+
 <body>
+
   <!-- Navbar -->
   <nav>
-    <a href="{{ url_for('routes.user_dashboard') if current_user.is_authenticated else url_for('routes.home') }}" class="brand">Mswaki</a>
+   <a href="{{ url_for('routes.user_dashboard') }}" class="brand">
+  <div class="user-brand">
+    <i class="fa fa-user"></i>
+    <div class="user-name">{{ current_user.name if current_user.is_authenticated else 'Guest' }}</div>
+  </div>
+  <div class="brand-text">Mswaki Transport</div>
+</a>
 
     <div class="hamburger" onclick="toggleMenu()">
-      <span></span>
-      <span></span>
-      <span></span>
+      <span></span><span></span><span></span>
     </div>
 
     <div class="nav-links" id="navLinks">
-      <a href="{{ url_for('routes.user_dashboard') if current_user.is_authenticated else url_for('routes.home') }}">Home</a>
+      <a href="{{ url_for('routes.home') }}">Home</a>
       <a href="{{ url_for('routes.about') }}">About Us</a>
       <a href="{{ url_for('routes.gallery') }}">Gallery</a>
 
       {% if current_user.is_authenticated %}
         <a href="{{ url_for('routes.book_vehicle') }}">Book Ride</a>
+        <a href="{{ url_for('routes.my_bookings') }}">My Bookings</a>
         <a href="{{ url_for('routes.contact_team') }}">Contact Team</a>
         <a href="{{ url_for('routes.report_misbehavior') }}">Report</a>
-        <a href="{{ url_for('routes.logout') }}" class="btn btn-primary">Logout</a>
-
-        <div class="user-dropdown">
-          <span>{{ current_user.name }}</span>
-        </div>
+        <a href="{{ url_for('routes.logout') }}">Logout</a>
       {% else %}
-        <a href="{{ url_for('routes.login') }}" class="btn btn-primary">Login</a>
-        <a href="{{ url_for('routes.register') }}" class="btn btn-secondary">Sign Up</a>
+        <a href="{{ url_for('routes.login') }}">Book Ride</a>
+        <a href="{{ url_for('routes.login') }}">My Bookings</a>
+        <a href="{{ url_for('routes.login') }}">Report</a>
+        <a href="{{ url_for('routes.login') }}">Login</a>
+        <a href="{{ url_for('routes.register') }}">Sign Up</a>
       {% endif %}
     </div>
   </nav>
 
-  <!-- Dashboard Content -->
-  <div class="dashboard">
-    <h1>Welcome, {{ current_user.name if current_user.is_authenticated else 'Guest' }}</h1>
-    <p>Your Mswaki dashboard gives you access to ride bookings, reporting, and more.</p>
-
-    <div class="cards">
-      <div class="card">Book a Ride</div>
-      <div class="card">View Booking History</div>
-      <div class="card">Contact Support</div>
-      <div class="card">Report Misbehavior</div>
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-content">
+      <h1>Travel Smart With Mswaki 🚐</h1>
+      <p>Affordable, fast and reliable matatu rides at your fingertips.</p>
+      {% if current_user.is_authenticated %}
+        <a href="{{ url_for('routes.book_vehicle') }}" class="cta-btn">Book a Ride</a>
+      {% else %}
+        <a href="{{ url_for('routes.login') }}" class="cta-btn">Login to Book</a>
+      {% endif %}
     </div>
-  </div>
+  </section>
 
-  <script>
-    function toggleMenu() {
-      const nav = document.getElementById('navLinks');
-      nav.classList.toggle('active');
-    }
-  </script>
+  <!-- Services -->
+  <section class="services">
+    <h2>Quick Access</h2>
+    <div class="service-grid">
+      {% if current_user.is_authenticated %}
+        <div class="card" onclick="location.href='{{ url_for('routes.book_vehicle') }}'">
+          <span>🎫</span> Book A Ride
+        </div>
+        <div class="card" onclick="location.href='{{ url_for('routes.my_bookings') }}'">
+          <span>📋</span> My Bookings
+        </div>
+        <div class="card" onclick="location.href='{{ url_for('routes.contact_team') }}'">
+          <span>📞</span> Contact Support
+        </div>
+        <div class="card" onclick="location.href='{{ url_for('routes.report_misbehavior') }}'">
+          <span>⚠</span> Report Misbehavior
+        </div>
+      {% else %}
+        <div class="card" onclick="location.href='{{ url_for('routes.login') }}'">
+          <span>🎫</span> Book A Ride
+        </div>
+        <div class="card" onclick="location.href='{{ url_for('routes.login') }}'">
+          <span>📋</span> My Bookings
+        </div>
+        <div class="card" onclick="location.href='{{ url_for('routes.login') }}'">
+          <span>⚠</span> Report Misbehavior
+        </div>
+        <div class="card" onclick="location.href='{{ url_for('routes.contact_team') }}'">
+          <span>📞</span> Contact Support
+        </div>
+      {% endif %}
+    </div>
+  </section>
+
+  <footer>
+    © 2025 Mswaki Transport — Move Smart. Move Together.
+  </footer>
+
+<script>
+  function toggleMenu() {
+    document.getElementById("navLinks").classList.toggle("active");
+  }
+</script>
+
 </body>
 </html>

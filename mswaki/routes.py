@@ -2026,12 +2026,28 @@ def resolve_report(report_id):
     return redirect(url_for("routes.admin_misbehavior_reports"))
 
 # ------------------ Admin bookings ------------------
-@routes.route("/admin/bookings", methods=["GET"])
+@routes.route('/admin/bookings')
 @login_required
-@role_required("admin")
 def admin_bookings():
-    bookings = Booking.query.order_by(Booking.booking_date.desc()).all()
-    return render_template("admin_bookings.html", bookings=bookings)
+    bookings = Booking.query.order_by(Booking.id.desc()).all()
+
+    # Convert bookings to a JSON-serializable format
+    bookings_data = []
+    for b in bookings:
+        bookings_data.append({
+            "id": b.id,
+            "user_name": b.user.name if b.user else "N/A",
+            "user_email": b.user.email if b.user and b.user.email else "",
+            "seats": b.seats,
+            "pickup": b.pickup,
+            "destination": b.destination,
+            "travel_date": b.travel_date.strftime("%Y-%m-%d") if b.travel_date else None,
+            "travel_time": b.travel_time.strftime("%H:%M") if b.travel_time else None,
+            "status": b.status,
+            "rejection_reason": b.rejection_reason or ""
+        })
+
+    return render_template("admin_bookings.html", bookings=bookings, bookings_data=bookings_data)
 
 @routes.route("/admin/update_booking/<int:booking_id>", methods=["POST"])
 @login_required
@@ -2095,15 +2111,22 @@ def book_vehicle():
         pickup = request.form.get('pickup')
         destination = request.form.get('destination')
         reason = request.form.get('reason')
+        travel_date_str = request.form.get('travel_date')
+        travel_time_str = request.form.get('travel_time')
 
-        # Save booking
+        # Convert strings to date and time objects
+        travel_date = datetime.strptime(travel_date_str, "%Y-%m-%d").date()
+        travel_time = datetime.strptime(travel_time_str, "%H:%M").time()
+
         booking = Booking(
             user_id=current_user.id,
             seats=seats,
             pickup=pickup,
             destination=destination,
             reason=reason,
-            status="Pending"  # optional
+            travel_date=travel_date,
+            travel_time=travel_time,
+            status="Pending"
         )
         db.session.add(booking)
         db.session.commit()
@@ -2112,6 +2135,61 @@ def book_vehicle():
 
     return render_template('book_vehicle.html')
 
+@routes.route('/my_bookings')
+@login_required
+def my_bookings():
+    # Fetch bookings for the logged-in user
+    bookings = Booking.query.filter_by(user_id=current_user.id).order_by(Booking.created_at.desc()).all()
+
+    # Prepare JSON-safe data for Modal UI
+    bookings_data = []
+    for b in bookings:
+        bookings_data.append({
+            "id": b.id,
+            "seats": b.seats,
+            "pickup": b.pickup,
+            "destination": b.destination,
+            "reason": b.reason or "",
+
+            # Dates for modal display
+            "travel_date": b.travel_date.strftime("%b %d, %Y") if b.travel_date else "N/A",
+            "travel_time": b.travel_time.strftime("%I:%M %p") if b.travel_time else "N/A",
+
+            # Status & rejection details
+            "status": b.status,
+            "rejection_reason": getattr(b, "rejection_reason", ""),
+
+            # Booking created timestamp
+            "created_at": b.created_at.strftime("%b %d, %Y %I:%M %p") if b.created_at else "N/A",
+
+            # Allow cancel only when pending
+            "can_cancel": b.status.lower() == "pending"
+        })
+
+    return render_template(
+        "user_bookings.html",
+        bookings=bookings,
+        bookings_data=bookings_data
+    )
+
+@routes.route('/cancel-booking/<int:booking_id>', methods=['POST'])
+@login_required
+def cancel_booking(booking_id):
+    booking = Booking.query.get_or_404(booking_id)
+
+    if booking.user_id != current_user.id:
+        flash("Unauthorized action!", "danger")
+        return redirect(url_for('routes.my_bookings'))
+
+    if booking.status != 'Pending':
+        flash("Only pending bookings can be cancelled!", "info")
+        return redirect(url_for('routes.my_bookings'))
+
+    booking.status = "cancelled"
+    db.session.commit()
+
+    flash("Booking cancelled successfully", "success")
+    return redirect(url_for('routes.my_bookings'))
 
 # ================================
 # REPORT MISBEHAVIOR

@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mswaki — My Bookings</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    :root {
+      --primary: #0369a1;
+      --gold: gold;
+      --light: #fff;
+    }
+
+    * {
+      margin: 0; padding: 0; box-sizing: border-box;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    body {
+      background: url('/static/images/mswaki.jpg') center/cover no-repeat fixed;
+      color: var(--light);
+      min-height: 100vh;
+    }
+
+    /* Navbar */
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      background: rgba(0,0,0,0.7);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    nav .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    .user-brand i {
+      font-size: 1.5rem;
+    }
+    .user-brand .user-name {
+      font-size: 0.65rem;
+      margin-top: 2px;
+      color: #fff;
+      white-space: nowrap;
+    }
+    .brand-text {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+
+    .nav-links {
+      display: flex;       /* Always show links on desktop */
+      gap: 1rem;
+      align-items: center;
+      max-height: none;    /* Ensure links are visible */
+    }
+
+    .nav-links a {
+      color: var(--light);
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      text-decoration: none;
+      transition: 0.3s;
+    }
+    .nav-links a:hover, .btn-primary:hover { 
+      background: var(--primary); 
+      color: #000; 
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #000;
+      font-weight: 600;
+    }
+
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      cursor: pointer;
+      gap: 5px;
+    }
+    .hamburger span {
+      width: 25px;
+      height: 3px;
+      background: var(--primary);
+      border-radius: 2px;
+    }
+
+    @media(max-width: 768px) {
+      .hamburger { display: flex; }
+      .nav-links {
+        position: absolute;
+        top: 70px;
+        right: 10px;
+        flex-direction: column;
+        background: rgba(0,0,0,0.8);
+        width: 200px;
+        display: none;
+        padding: 1rem;
+        border-radius: 10px;
+        max-height: 500px;
+        overflow: hidden;
+      }
+      .nav-links.active { display: flex; }
+      .nav-links a { margin: 0.5rem 0; }
+    }
+
+    /* Container */
+    .container {
+      max-width: 950px;
+      background: rgba(0,0,0,0.6);
+      margin: 2rem auto;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    h2 {
+      color: var(--gold);
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      color: #fff;
+    }
+    th, td {
+      padding: 0.8rem;
+      border-bottom: 1px solid rgba(255,255,255,0.3);
+      text-align: center;
+    }
+
+    .status-badge {
+      padding: 0.25rem 0.5rem;
+      border-radius: 5px;
+      font-size: 0.85rem;
+      color: #fff;
+    }
+    .status-pending { background: #f0ad4e; }
+    .status-approved { background: #5cb85c; }
+    .status-rejected { background: #d9534f; }
+    .status-completed { background: #0275d8; }
+    .status-cancelled { background: #6c757d; }
+
+    .btn {
+      padding: 0.45rem 0.8rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      border: none;
+    }
+    .btn-view { background: var(--primary); color: #fff; }
+    .btn-cancel { background: #d9534f; color: #fff; }
+    .btn-view:hover, .btn-cancel:hover { opacity: 0.8; }
+
+    /* Modal */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 999;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .modal.active { display: block; opacity: 1; }
+
+    .modal-content {
+      background: #fff;
+      max-width: 500px;
+      margin: 100px auto;
+      padding: 1.5rem;
+      border-radius: 10px;
+      position: relative;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      color: #000;
+    }
+    .close {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      cursor: pointer;
+      font-size: 20px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 1.5rem 0;
+      background: rgba(0,0,0,0.7);
+      margin-top: 2rem;
+      color: #aaa;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav>
+    <a href="{{ url_for('routes.user_dashboard') }}" class="brand">
+      <div class="user-brand">
+        <i class="fa fa-user"></i>
+        <div class="user-name">{{ current_user.name if current_user.is_authenticated else 'Guest' }}</div>
+      </div>
+      <div class="brand-text">Mswaki Transport</div>
+    </a>
+    <div class="hamburger" onclick="toggleMenu()">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    <div class="nav-links" id="navLinks">
+      <a href="{{ url_for('routes.user_dashboard') }}">Home</a>
+      <a href="{{ url_for('routes.book_vehicle') }}">Book Ride</a>
+      <a href="{{ url_for('routes.report_misbehavior') }}">Report</a>
+      {% if current_user.is_authenticated %}
+        <a href="{{ url_for('routes.logout') }}" class="btn-primary">Logout</a>
+      {% endif %}
+    </div>
+  </nav>
+
+  <!-- Bookings Table -->
+  <div class="container">
+    <h2>My Bookings</h2>
+
+    {% if bookings %}
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Seats</th>
+          <th>Route</th>
+          <th>Date/Time</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for booking in bookings %}
+        <tr>
+          <td>#{{ booking.id }}</td>
+          <td>{{ booking.seats }}</td>
+          <td>{{ booking.pickup }} → {{ booking.destination }}</td>
+          <td>
+            {{ booking.travel_date.strftime('%b %d, %Y') if booking.travel_date else 'N/A' }}<br>
+            {{ booking.travel_time.strftime('%I:%M %p') if booking.travel_time else '' }}
+          </td>
+          <td>
+            <span class="status-badge status-{{ booking.status|lower|replace(' ', '-') }}">
+              {{ booking.status|capitalize }}
+            </span>
+          </td>
+          <td>
+            <button class="btn btn-view" onclick="viewBooking({{ booking.id }})">View</button>
+            {% if booking.status == 'Pending' %}
+            <form method="POST" action="{{ url_for('routes.cancel_booking', booking_id=booking.id) }}" style="display:inline;">
+              <button type="submit" class="btn btn-cancel">Cancel</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="text-align:center; margin-top:1rem;">You have no bookings yet.</p>
+    {% endif %}
+  </div>
+
+  <!-- Modal -->
+  <div id="bookingModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">&times;</span>
+      <div id="bookingDetails"></div>
+    </div>
+  </div>
+
+  <footer>
+    &copy; {{ current_year or 2025 }} Mswaki Transport — Move Smart. Move Together.
+  </footer>
+
+  <script>
+    function toggleMenu() {
+      document.getElementById('navLinks').classList.toggle('active');
+    }
+
+    const bookingsData = {{ bookings_data|tojson }};
+
+    function viewBooking(bookingId) {
+      const booking = bookingsData.find(b => b.id === bookingId);
+      document.getElementById('bookingDetails').innerHTML = `
+        <h3>Booking #${booking.id}</h3>
+        <p><strong>Status:</strong> <span class="status-badge status-${booking.status.toLowerCase()}">${booking.status}</span></p>
+        <p><strong>Seats:</strong> ${booking.seats}</p>
+        <p><strong>Route:</strong> ${booking.pickup} → ${booking.destination}</p>
+        <p><strong>Travel Date:</strong> ${booking.travel_date ?? "N/A"}</p>
+        <p><strong>Travel Time:</strong> ${booking.travel_time ?? "N/A"}</p>
+        ${booking.rejection_reason ? `<p style="background:#ffeaea;padding:10px;border-left:4px solid #d9534f;"><strong>Reason:</strong> ${booking.rejection_reason}</p>` : ''}
+      `;
+      document.getElementById('bookingModal').classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('bookingModal').classList.remove('active');
+    }
+
+    window.onclick = function(event) {
+      const modal = document.getElementById('bookingModal');
+      if (event.target === modal) closeModal();
+    }
+  </script>
+
+</body>
+</html>

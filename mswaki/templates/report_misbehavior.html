@@ -1,105 +1,207 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Report Misbehavior | Mswaki</title>
-  <style>
-    /* Reset and base */
-    * { margin:0; padding:0; box-sizing:border-box; font-family:'Poppins',sans-serif; }
-    body {
-      background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url("/static/images/mswaki.jpg") no-repeat center center fixed;
-      background-size: cover; color:#fff; min-height:100vh;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Report Misbehavior — Mswaki Transport</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    /* Navbar */
-    nav { display:flex; justify-content:space-between; align-items:center; padding:1rem 2rem; background:rgba(0,0,0,0.7); position:relative; }
-    nav .brand { font-size:1.8rem; font-weight:700; color:#00aaff; text-decoration:none; }
-    nav .nav-links { display:flex; gap:1rem; align-items:center; }
-    nav .nav-links a { color:#fff; padding:0.5rem 1rem; border-radius:5px; transition:0.3s; }
-    nav .nav-links a:hover { background:#00aaff; color:#000; }
-    nav .btn-primary { background:#00aaff; color:#000; font-weight:600; }
-    .hamburger { display:none; flex-direction:column; cursor:pointer; gap:5px; }
-    .hamburger span { width:25px; height:3px; background:#00aaff; border-radius:2px; }
 
-    /* Container */
-    .container { max-width:700px; margin:4rem auto; padding:2rem; background:rgba(0,0,0,0.7); border-radius:15px; box-shadow:0 0 20px rgba(0,0,0,0.5); }
-    .container h1 { text-align:center; margin-bottom:1rem; color:#00aaff; font-size:2rem; }
-    .container p { text-align:center; margin-bottom:2rem; font-size:1.1rem; }
-
-    /* Form */
-    form div { margin-bottom:1.5rem; display:flex; flex-direction:column; }
-    label { margin-bottom:0.5rem; font-weight:600; color:#00aaff; }
-    select, textarea { padding:0.75rem; border-radius:8px; border:none; font-size:1rem; resize:vertical; }
-    select:focus, textarea:focus { outline:2px solid #00aaff; }
-    button[type="submit"] { width:100%; padding:0.8rem; background:#00aaff; color:#000; font-weight:700; font-size:1.1rem; border:none; border-radius:10px; cursor:pointer; transition:0.3s; }
-    button[type="submit"]:hover { background:#0077cc; color:#fff; }
-
-    .back-link { display:block; margin-top:1.5rem; text-align:center; color:#00aaff; text-decoration:none; font-weight:600; }
-    .back-link:hover { text-decoration:underline; color:#0077cc; }
-
-    /* Footer */
-    footer { text-align:center; margin-top:3rem; padding:1rem; background:rgba(0,0,0,0.7); color:#aaa; font-size:0.9rem; }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-  .hamburger {
-    display: flex;
-  }
-
-  .nav-links {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    background: rgba(0,0,0,0.8);
-    flex-direction: column;
-    width: 200px;
-    display: none; /* <-- hide initially */
-    padding: 1rem;
-  }
-
-  .nav-links.active {
-    display: flex; /* <-- show only when active */
-  }
-
-  .nav-links a {
-    margin: 0.5rem 0;
-  }
+<style>
+:root {
+  --primary: #0369a1;
+  --gold: gold;
+  --light: #fff;
 }
+
+* { margin:0; padding:0; box-sizing:border-box; font-family:'Poppins',sans-serif; }
+
+body {
+  background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url("/static/images/mswaki.jpg") no-repeat center center fixed;
+  background-size: cover;
+  color: var(--light);
+  min-height: 100vh;
+}
+
+/* Navbar */
+/* Navbar */
+nav {
+  position: fixed; 
+  top: 0; 
+  width: 100%; 
+  padding: 1rem 2rem;
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center;
+  background: rgba(3,105,161,0.9); 
+  z-index: 1000;
+}
+
+nav .brand { 
+  font-size: 1.7rem; 
+  font-weight: 700; 
+  color: var(--light); 
+  text-decoration: none; 
+}
+
+nav a { 
+  color: var(--light); 
+  padding: 0.5rem 1rem; 
+  margin-left: 6px; 
+  border-radius: 4px; 
+  transition: 0.3s; 
+  text-decoration: none; 
+}
+
+nav a:hover, nav a.active { 
+  background: rgba(255,255,255,0.2); 
+  color: var(--dark); 
+}
+
+nav .btn-primary { 
+  background: var(--primary); 
+  color: #fff; 
+  font-weight: 600; 
+}
+
+/* Desktop: links always visible */
 .nav-links {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.3s ease;
+  display: flex;
+  gap: 10px;
+  max-height: none;   /* allow full height on desktop */
+  overflow: visible;
 }
 
-.nav-links.active {
-  max-height: 500px; /* enough to show all links */
+/* Hamburger menu hidden on desktop */
+.hamburger { 
+  display: none; 
+  flex-direction: column; 
+  gap: 4px; 
+  cursor: pointer; 
 }
-  </style>
+.hamburger span { 
+  width: 26px; 
+  height: 3px; 
+  background: #fff; 
+}
+
+/* Mobile */
+@media (max-width: 820px) {
+  .nav-links {
+    display: none; 
+    flex-direction: column; 
+    background: var(--primary); 
+    position: absolute; 
+    top: 70px; 
+    right: 10px; 
+    width: 200px; 
+    padding: 1rem; 
+    border-radius: 10px; 
+    max-height: 500px;
+    overflow: hidden;
+  }
+  .nav-links.active { 
+    display: flex; 
+  }
+  .nav-links a { 
+    margin: 0.5rem 0; 
+  }
+  .hamburger { 
+    display: flex; 
+  }
+}
+
+
+/* Hero */
+.hero {
+  padding:6rem 2rem;
+  text-align:center;
+  background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('/static/images/road.jpg') center/cover no-repeat fixed;
+}
+/* Brand container */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #00aaff;
+  text-decoration: none;
+}
+
+/* User icon */
+.user-brand i {
+  font-size: 1.5rem;        /* bigger icon */
+}
+
+/* User name */
+.user-brand .user-name {
+  font-size: 0.65rem;       /* smaller text */
+  margin-top: 2px;          /* small gap between icon & name */
+  white-space: nowrap; 
+  color:#ffffff;     /* prevent line breaks */
+}
+.brand-text {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+
+
+.hero h1 { font-size:2.5rem; margin-bottom:1rem; color: var(--gold); }
+.hero p { font-size:1.1rem; max-width:700px; margin:auto; line-height:1.7; }
+
+/* Container & Form */
+.container {
+  max-width:700px; margin:3rem auto; padding:2rem;
+  background: rgba(0,0,0,0.7); border-radius:15px; box-shadow:0 0 20px rgba(0,0,0,0.5);
+}
+.container h2 { color: var(--primary); text-align:center; margin-bottom:1rem; }
+.container form div { margin-bottom:1.5rem; display:flex; flex-direction:column; }
+.container label { margin-bottom:0.5rem; font-weight:600; color: var(--primary); }
+.container select, .container textarea {
+  padding:0.75rem; border-radius:8px; border:none; font-size:1rem; resize:vertical;
+}
+.container select:focus, .container textarea:focus { outline:2px solid var(--primary); }
+.container button { width:100%; padding:0.8rem; background: var(--primary); color:#000; font-weight:700; font-size:1.1rem; border:none; border-radius:10px; cursor:pointer; transition:0.3s; }
+.container button:hover { background:#0077cc; color:#fff; }
+.back-link { display:block; margin-top:1.5rem; text-align:center; color: var(--primary); font-weight:600; text-decoration:none; }
+.back-link:hover { text-decoration:underline; color:#0077cc; }
+
+/* Footer */
+footer { text-align:center; margin-top:3rem; padding:1rem; background:rgba(0,0,0,0.7); color:#aaa; font-size:0.9rem; }
+
+</style>
 </head>
+
 <body>
 
 <nav>
-  <a href="{{ url_for('routes.user_dashboard') }}" class="brand">Mswaki</a>
-  <div class="hamburger" onclick="toggleMenu()">
-    <span></span>
-    <span></span>
-    <span></span>
+<a href="{{ url_for('routes.user_dashboard') }}" class="brand">
+  <div class="user-brand">
+    <i class="fa fa-user"></i>
+    <div class="user-name">{{ current_user.name if current_user.is_authenticated else 'Guest' }}</div>
   </div>
+  <div class="brand-text">Mswaki Transport</div>
+</a>
+
+
+  <div class="hamburger" onclick="toggleMenu()"><span></span><span></span><span></span></div>
   <div class="nav-links" id="navLinks">
     <a href="{{ url_for('routes.user_dashboard') }}">Home</a>
     <a href="{{ url_for('routes.book_vehicle') }}">Book Ride</a>
-    <a href="{{ url_for('routes.report_misbehavior') }}">Report</a>
+    <a class="active" href="{{ url_for('routes.report_misbehavior') }}">Report</a>
     {% if current_user.is_authenticated %}
-      <a href="{{ url_for('routes.logout') }}" class="btn btn-primary">Logout</a>
+      <a href="{{ url_for('routes.logout') }}" class="btn-primary">Logout</a>
     {% endif %}
   </div>
 </nav>
 
-<div class="container">
+<section class="hero">
   <h1>Report Misbehavior</h1>
-  <p>Your report will remain <strong>anonymous</strong>. Please provide as many details as possible.</p>
+  <p>Your report will remain <strong>anonymous</strong>. Provide as many details as possible.</p>
+</section>
 
+<div class="container">
   <form method="POST">
     <div>
       <label for="driver_id">Driver Involved</label>
@@ -128,7 +230,6 @@
 
     <button type="submit">Submit Report</button>
   </form>
-
   <a href="{{ url_for('routes.user_dashboard') }}" class="back-link">← Back to Dashboard</a>
 </div>
 
@@ -137,10 +238,10 @@
 </footer>
 
 <script>
-  function toggleMenu() {
-    const nav = document.getElementById('navLinks');
-    nav.classList.toggle('active');
-  }
+function toggleMenu() {
+  const nav = document.getElementById('navLinks');
+  nav.classList.toggle('active');
+}
 </script>
 
 </body>

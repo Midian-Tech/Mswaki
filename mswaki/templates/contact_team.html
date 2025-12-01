@@ -1,51 +1,236 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Contact – Mswaki Transport</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contact — Mswaki Transport</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+<style>
+:root {
+  --primary: #0369a1;
+  --gold: gold;
+  --light: #fff;
+}
+
+* {
+  margin:0; padding:0; box-sizing:border-box;
+  font-family: 'Poppins', sans-serif;
+}
+
+body {
+  background: url('/static/images/mswaki.jpg') center/cover no-repeat fixed;
+  color: var(--light);
+  min-height: 100vh;
+}
+
+/* Navbar */
+/* Navbar */
+nav {
+  position: fixed; 
+  top: 0; 
+  width: 100%; 
+  padding: 1rem 2rem;
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center;
+  background: rgba(3,105,161,0.9); 
+  z-index: 1000;
+}
+
+nav .brand { 
+  font-size: 1.7rem; 
+  font-weight: 700; 
+  color: var(--light); 
+  text-decoration: none; 
+}
+
+nav a { 
+  color: var(--light); 
+  padding: 0.5rem 1rem; 
+  margin-left: 6px; 
+  border-radius: 4px; 
+  transition: 0.3s; 
+  text-decoration: none; 
+}
+
+nav a:hover, nav a.active { 
+  background: rgba(255,255,255,0.2); 
+  color: var(--dark); 
+}
+
+nav .btn-primary { 
+  background: var(--primary); 
+  color: #fff; 
+  font-weight: 600; 
+}
+
+/* Desktop: links always visible */
+.nav-links {
+  display: flex;
+  gap: 10px;
+  max-height: none;   /* allow full height on desktop */
+  overflow: visible;
+}
+
+/* Hamburger menu hidden on desktop */
+.hamburger { 
+  display: none; 
+  flex-direction: column; 
+  gap: 4px; 
+  cursor: pointer; 
+}
+.hamburger span { 
+  width: 26px; 
+  height: 3px; 
+  background: #fff; 
+}
+
+/* Mobile */
+@media (max-width: 820px) {
+  .nav-links {
+    display: none; 
+    flex-direction: column; 
+    background: var(--primary); 
+    position: absolute; 
+    top: 70px; 
+    right: 10px; 
+    width: 200px; 
+    padding: 1rem; 
+    border-radius: 10px; 
+    max-height: 500px;
+    overflow: hidden;
+  }
+  .nav-links.active { 
+    display: flex; 
+  }
+  .nav-links a { 
+    margin: 0.5rem 0; 
+  }
+  .hamburger { 
+    display: flex; 
+  }
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #00aaff;
+  text-decoration: none;
+}
+
+/* User icon */
+.user-brand i {
+  font-size: 1.5rem;        /* bigger icon */
+}
+
+/* User name */
+.user-brand .user-name {
+  font-size: 0.65rem;       /* smaller text */
+  margin-top: 2px;          /* small gap between icon & name */
+  white-space: nowrap; 
+  color:#ffffff;     /* prevent line breaks */
+}
+.brand-text {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+/* Hero */
+.hero {
+  padding: 6rem 2rem;
+  text-align: center;
+  background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('/static/images/road.jpg') center/cover no-repeat fixed;
+}
+.hero h1 { font-size: 2.5rem; margin-bottom: 1rem; color: var(--gold); }
+.hero p { font-size:1.1rem; max-width:700px; margin:auto; line-height:1.7; }
+
+/* Contacts Section */
+.contacts-container {
+  max-width: 1200px; margin: 3rem auto; padding: 0 1rem; display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;
+}
+
+.contact-card {
+  background: rgba(0,0,0,0.6);
+  padding: 2rem;
+  border-radius: 12px;
+  text-align: center;
+  transition: 0.3s;
+}
+.contact-card:hover { transform: translateY(-5px); background: rgba(3,105,161,0.7); }
+.contact-card h3 { color: var(--primary); margin-bottom: 0.5rem; }
+.contact-card p { margin-bottom: 0.3rem; font-size:0.95rem; color:#fff; }
+.contact-card i { font-size: 2rem; margin-bottom: 10px; color: var(--gold); }
+
+/* Footer */
+footer { text-align:center; padding:1.5rem 0; background: rgba(0,0,0,0.7); color:#aaa; font-size:0.9rem; margin-top:3rem; }
+</style>
 </head>
-
 <body>
 
 <nav>
-  <a href="{{ url_for('routes.user_dashboard') }}" class="brand">Mswaki</a>
-
+  <a href="{{ url_for('routes.user_dashboard') }}" class="brand">
+  <div class="user-brand">
+    <i class="fa fa-user"></i>
+    <div class="user-name">{{ current_user.name if current_user.is_authenticated else 'Guest' }}</div>
+  </div>
+  <div class="brand-text">Mswaki Transport</div>
+</a>
   <div class="hamburger"><span></span><span></span><span></span></div>
-
   <div class="nav-links">
-      <a href="{{ url_for('routes.user_dashboard') }}">Home</a>
-      <a href="{{ url_for('routes.about') }}">About Us</a>
-      <a href="{{ url_for('routes.gallery') }}">Gallery</a>
-      <a href="{{ url_for('routes.book_vehicle') }}">Book Ride</a>
-      <a class="active" href="{{ url_for('routes.contact_team') }}">Contact Team</a>
-      <a href="{{ url_for('routes.report_misbehavior') }}">Report</a>
-      {% if current_user.is_authenticated %}
-      <a href="{{ url_for('routes.logout') }}" class="btn btn-primary">Logout</a>
-      {% endif %}
+    <a href="{{ url_for('routes.user_dashboard') }}">Home</a>
+    <a href="{{ url_for('routes.about') }}">About Us</a>
+    <a href="{{ url_for('routes.gallery') }}">Gallery</a>
+    <a href="{{ url_for('routes.book_vehicle') }}">Book Ride</a>
+    <a class="active" href="{{ url_for('routes.contact_team') }}">Contact Team</a>
+    <a href="{{ url_for('routes.report_misbehavior') }}">Report</a>
+    {% if current_user.is_authenticated %}
+      <a href="{{ url_for('routes.logout') }}" class="btn-primary">Logout</a>
+    {% endif %}
   </div>
 </nav>
 
-<section class="hero contact-hero">
+<section class="hero">
   <h1>Contact Our Team</h1>
-  <p>We're here to help anytime.</p>
+  <p>Need help? Reach out to the right person.</p>
 </section>
 
-<section class="contact-page">
-  <form class="contact-form" method="POST" action="{{ url_for('routes.send_message') }}">
-    <input type="text" placeholder="Your Name" name="name" required>
-    <input type="email" placeholder="Your Email" name="email" required>
-    <textarea name="message" placeholder="Your Message" required></textarea>
-    <button type="submit" class="btn btn-primary">Send Message</button>
-  </form>
+<section class="contacts-container">
+  <div class="contact-card">
+    <i class="fa fa-user-tie"></i>
+    <h3>CEO: Duncan Kimanthi</h3>
+    <p>Phone: +254 712 345 678</p>
+    <p>Email: ceo@mswaki.co.ke</p>
+  </div>
+
+  <div class="contact-card">
+    <i class="fa fa-car"></i>
+    <h3>Driver: Samuel Ireri</h3>
+    <p>Phone: +254 733 987 654</p>
+    <p>Email: driver@mswaki.co.ke</p>
+  </div>
+
+  <div class="contact-card">
+    <i class="fa fa-user-friends"></i>
+    <h3>Conductor: -----</h3>
+    <p>Phone: +254 701 234 567</p>
+    <p>Email: conductor@mswaki.co.ke</p>
+  </div>
+
+  <div class="contact-card">
+    <i class="fa fa-building"></i>
+    <h3>Neno SACCO Office</h3>
+    <p>Address: 123 Main St, Nairobi, Kenya</p>
+    <p>Phone: +254 722 345 678</p>
+    <p>Email: office@nenosacco.co.ke</p>
+  </div>
 </section>
 
-<footer class="footer">
-  <p>{{ current_year or 2025 }} Mswaki Transport. All rights reserved.</p>
+<footer>
+  &copy; {{ current_year or 2025 }} Mswaki Transport. All rights reserved.
 </footer>
 
 <script>

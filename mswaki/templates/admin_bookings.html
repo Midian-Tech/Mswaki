@@ -2,63 +2,36 @@
 {% block title %}Admin — Bookings{% endblock %}
 
 {% block head_extra %}
-<!-- Date Range Picker CSS -->
 <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+<style>
+/* Custom button colors */
+.btn-approve { background-color: #facc15; color: #000; border: none; padding: 0.3rem 0.6rem; border-radius: 4px; }
+.btn-reject { background-color: #ef4444; color: #fff; border: none; padding: 0.3rem 0.6rem; border-radius: 4px; }
+
+/* Modal Styles */
+.modal { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); }
+.modal.active { display: block; }
+.modal-content { background-color: #fff; margin: 10% auto; padding: 1rem; border-radius: 10px; width: 90%; max-width: 600px; position: relative; color: #000; }
+.modal-content .close { position: absolute; top: 0.5rem; right: 1rem; font-size: 1.5rem; cursor: pointer; }
+.status-badge { padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
+.status-pending { background-color: #facc15; color: #000; }
+.status-approved { background-color: #22c55e; color: #fff; }
+.status-rejected { background-color: #ef4444; color: #fff; }
+.status-completed { background-color: #3b82f6; color: #fff; }
+.status-cancelled { background-color: #9ca3af; color: #fff; }
+</style>
 {% endblock %}
 
 {% block content %}
-
-<!-- Main Content -->
 <main class="main-content">
-  <!-- Header -->
   <header class="admin-header">
     <div>
       <h1 class="page-title">Bookings Management</h1>
       <p class="text-gray-600">Monitor, approve, or reject booking requests</p>
     </div>
-    <div class="admin-actions">
-      <div class="relative">
-        <input type="text" id="date-range" class="form-control" placeholder="Select date range" style="min-width: 250px;">
-        <i class="fas fa-calendar-alt absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-      </div>
-      <button class="btn btn-primary">
-        <i class="fas fa-download"></i> Export
-      </button>
-    </div>
   </header>
 
-  <!-- Filters -->
-  <div class="card mb-6">
-    <div class="flex flex-wrap items-center gap-4 p-4">
-      <div class="flex-1">
-        <input type="text" class="form-control" placeholder="Search bookings...">
-      </div>
-      <select class="form-control w-48">
-        <option value="">All Status</option>
-        <option value="pending">Pending</option>
-        <option value="approved">Approved</option>
-        <option value="rejected">Rejected</option>
-        <option value="completed">Completed</option>
-        <option value="cancelled">Cancelled</option>
-      </select>
-      <button class="btn btn-outline">
-        <i class="fas fa-filter"></i> Filter
-      </button>
-      <button class="btn btn-outline">
-        <i class="fas fa-sync-alt"></i> Reset
-      </button>
-    </div>
-  </div>
-
-  <!-- Bookings Table -->
   <div class="card">
-    <div class="card-header">
-      <h2 class="card-title">All Bookings</h2>
-      <div class="card-actions">
-        <span class="text-sm text-gray-600">{{ bookings|length }} bookings found</span>
-      </div>
-    </div>
-
     <div class="table-container">
       {% if bookings %}
       <table>
@@ -68,7 +41,7 @@
             <th>User</th>
             <th>Seats</th>
             <th>Route</th>
-            <th>Date/Time</th>
+            <th>Travel Date/Time</th>
             <th>Status</th>
             <th>Actions</th>
           </tr>
@@ -78,50 +51,36 @@
           <tr>
             <td>#{{ booking.id }}</td>
             <td>
-              <div class="font-medium">{{ booking.user.name if booking.user else 'N/A' }}</div>
-              <div class="text-sm text-gray-500">{{ booking.user.email if booking.user and booking.user.email else '' }}</div>
+              <div>{{ booking.user.name if booking.user else 'N/A' }}</div>
+              <div style="font-size:0.8rem; color:gray;">{{ booking.user.email if booking.user and booking.user.email else '' }}</div>
             </td>
             <td>{{ booking.seats }} seats</td>
+            <td>{{ booking.pickup }} → {{ booking.destination }}</td>
             <td>
-              <div class="font-medium">{{ booking.pickup }}</div>
-              <div class="text-sm text-gray-500">to {{ booking.destination }}</div>
+              {{ booking.travel_date.strftime('%b %d, %Y') if booking.travel_date else 'N/A' }}
+              <br>
+              {{ booking.travel_time.strftime('%I:%M %p') if booking.travel_time else '' }}
             </td>
             <td>
-              <div class="whitespace-nowrap">
-                {{ booking.booking_date.strftime('%b %d, %Y') if booking.booking_date else 'N/A' }}
-              </div>
-              <div class="text-sm text-gray-500">
-                {{ booking.booking_date.strftime('%I:%M %p') if booking.booking_date else '' }}
-              </div>
+              <span class="status-badge status-{{ booking.status|lower }}">{{ booking.status }}</span>
             </td>
             <td>
-              <span class="status-badge status-{{ booking.status|lower|replace(' ', '-') }}">
-                {{ booking.status|capitalize }}
-              </span>
-            </td>
-            <td>
-              <div class="flex items-center space-x-2">
-                <button class="btn btn-sm btn-outline" onclick="viewBooking('{{ booking.id }}')">
-                  <i class="fas fa-eye"></i>
-                </button>
-                {% if booking.status == 'pending' %}
-                <form action="{{ url_for('routes.admin_update_booking', booking_id=booking.id) }}" method="POST" class="inline">
-                  <button type="submit" name="action" value="approve" class="btn btn-sm btn-success">
-                    <i class="fas fa-check"></i>
-                  </button>
-                  <button type="submit" name="action" value="reject" class="btn btn-sm btn-danger">
-                    <i class="fas fa-times"></i>
-                  </button>
-                </form>
-                {% endif %}
-              </div>
+              <button class="btn btn-outline" onclick="viewBooking('{{ booking.id }}')">View Details</button>
+
+              {% if booking.status|lower == 'pending' %}
+              <form action="{{ url_for('routes.admin_update_booking', booking_id=booking.id) }}" method="POST" style="margin-top:0.3rem;">
+                <textarea name="rejection_reason" placeholder="Reason for rejection" style="width:100%; margin-bottom:0.3rem;"></textarea>
+                <button type="submit" name="action" value="approve" class="btn-approve">Approve</button>
+                <button type="submit" name="action" value="reject" class="btn-reject">Reject</button>
+              </form>
+              {% endif %}
             </td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
       {% else %}
-      <p class="p-4 text-gray-500">No bookings found.</p>
+      <p>No bookings found.</p>
       {% endif %}
     </div>
   </div>
@@ -134,61 +93,42 @@
     <div id="bookingDetails"></div>
   </div>
 </div>
-
 {% endblock %}
 
 {% block scripts %}
-<!-- Date Range Picker -->
-<script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
-<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
-
+<script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
 <script>
-// View booking details
-function viewBooking(bookingId) {
-  console.log('Viewing booking:', bookingId);
+const bookingsData = {{ bookings_data|tojson }};
 
-  const booking = bookingsData ? bookingsData.find(b => b.id == bookingId) : null;
-  const seats = booking ? booking.seats : 'N/A';
-  const pickup = booking ? booking.pickup : 'Unknown';
-  const destination = booking ? booking.destination : 'Unknown';
-  const status = booking ? booking.status : 'pending';
+function viewBooking(bookingId) {
+  const booking = bookingsData.find(b => b.id == bookingId);
+  if (!booking) return;
+
+  const travelDate = booking.travel_date ? moment(booking.travel_date).format('MMM DD, YYYY') : 'N/A';
+  const travelTime = booking.travel_time ? moment(booking.travel_time, 'HH:mm:ss').format('hh:mm A') : '';
 
   document.getElementById('bookingDetails').innerHTML = `
-    <div class="space-y-4">
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <div class="text-sm text-gray-500">Booking ID</div>
-          <div class="font-medium">#${bookingId}</div>
-        </div>
-        <div>
-          <div class="text-sm text-gray-500">Status</div>
-          <span class="status-badge status-${status.toLowerCase().replace(' ', '-')}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>
-        </div>
-      </div>
-
-      <div class="border-t border-gray-100 my-4"></div>
-
-      <div>
-        <h4 class="font-medium mb-2">Booking Details</h4>
-        <div class="space-y-2">
-          <div><strong>Seats Booked:</strong> ${seats}</div>
-          <div><strong>Route:</strong> ${pickup} → ${destination}</div>
-        </div>
-      </div>
-    </div>
+    <h3>Booking #${booking.id}</h3>
+    <p><strong>Status:</strong> <span class="status-badge status-${booking.status.toLowerCase()}">${booking.status}</span></p>
+    <p><strong>Seats:</strong> ${booking.seats}</p>
+    <p><strong>Route:</strong> ${booking.pickup} → ${booking.destination}</p>
+    <p><strong>Travel Date:</strong> ${travelDate}</p>
+    <p><strong>Travel Time:</strong> ${travelTime}</p>
+    ${booking.rejection_reason ? `<p><strong>Rejection Reason:</strong> ${booking.rejection_reason}</p>` : ''}
+    ${booking.reason ? `<p><strong>Reason for Hire:</strong> ${booking.reason}</p>` : ''}
   `;
 
-  document.getElementById('bookingModal').classList.add('active');
+  const modal = document.getElementById('bookingModal');
+  modal.classList.add('active');
   document.body.style.overflow = 'hidden';
 }
 
-// Close modal
 function closeModal() {
-  document.getElementById('bookingModal').classList.remove('active');
+  const modal = document.getElementById('bookingModal');
+  modal.classList.remove('active');
   document.body.style.overflow = 'auto';
 }
 
-// Close modal when clicking outside
 window.onclick = function(event) {
   const modal = document.getElementById('bookingModal');
   if (event.target == modal) closeModal();
