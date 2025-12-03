@@ -1,5 +1,5 @@
 import os
-from flask import Flask
+from flask import Flask, render_template, redirect
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
@@ -9,13 +9,13 @@ from flask_mail import Mail
 db = SQLAlchemy()
 login_manager = LoginManager()
 migrate = Migrate()
-mail = Mail()  # <-- Mail instance added
+mail = Mail()  # Mail instance
 
 def create_app():
     """Application factory for the Mswaki system."""
     app = Flask(__name__)
 
-    # Basic Config
+    # ---------------- Basic Config ----------------
     app.config['SECRET_KEY'] = 'your-secret-key'
     base_dir = os.path.abspath(os.path.dirname(__file__))
     db_path = os.path.join(base_dir, '..', 'instance', 'mswaki.db')
@@ -31,11 +31,11 @@ def create_app():
     app.config['MAIL_PORT'] = 587
     app.config['MAIL_USE_TLS'] = True
     app.config['MAIL_USERNAME'] = 'mswakitransport@gmail.com'
-    app.config['MAIL_PASSWORD'] = 'qamvrwsfslgukjgz'  # <-- NO spaces!!
+    app.config['MAIL_PASSWORD'] = 'qamvrwsfslgukjgz'  # <-- NO spaces
     app.config['MAIL_DEFAULT_SENDER'] = 'mswakitransport@gmail.com'
     # ---------------------------------------------------------
 
-    # Init extensions
+    # ---------------- Init extensions ----------------
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
@@ -43,22 +43,31 @@ def create_app():
 
     login_manager.login_view = 'routes.login'
 
-    # User loader
+    # ---------------- User loader ----------------
     from mswaki.models import User
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
 
-    # Jinja2 zip helper
+    # ---------------- Jinja2 helper ----------------
     def zip_lists(a, b):
         return zip(a, b)
     app.jinja_env.filters['zip'] = zip_lists
 
-    # Register routes
+    # ---------------- Register routes ----------------
     from mswaki.routes import routes
     app.register_blueprint(routes)
 
-    # Create DB tables if not exists
+    # ---------------- Root route for Render ----------------
+    @app.route("/")
+    def root():
+        # Option 1: render your dashboard template directly
+        return render_template("user_dashboard.html")
+
+        # Option 2: redirect to a route in your blueprint
+        # return redirect("/user_dashboard")
+
+    # ---------------- Create DB tables if not exists ----------------
     with app.app_context():
         db.create_all()
 
