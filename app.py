@@ -1,17 +1,6 @@
-from flask import Flask, render_template, redirect
+from mswaki import create_app
 
-def create_app():
-    app = Flask(__name__)
-    
-    # --- Add this route ---
-    @app.route("/")
-    def home():
-        # Option 1: redirect to dashboard route
-        return redirect("/user_dashboard")
+app = create_app()
 
-        # Option 2: render a template
-        # return render_template("user_dashboard.html")
-    
-    # other app setup, blueprints, etc.
-    
-    return app
+if __name__ == "__main__":
+    app.run(debug=True)
