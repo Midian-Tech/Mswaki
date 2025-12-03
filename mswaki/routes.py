@@ -34,6 +34,8 @@ from dateutil.relativedelta import relativedelta
 from flask import send_file
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
+from mswaki.utils.email_service import send_booking_status_email, send_email
+from apscheduler.schedulers.background import BackgroundScheduler
 
 # ============================================================
 # BLUEPRINT SETUP
@@ -63,7 +65,35 @@ def role_required(role):
             return f(*args, **kwargs)
         return decorated_function
     return decorator
+def send_monthly_finance_report():
+    # Generate CSV in-memory
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Booking ID", "User", "Seats", "Total Paid", "Status", "Date"])
+    
+    # Query all bookings from the last month
+    from mswaki.models import Booking
+    last_month = datetime.now() - timedelta(days=30)
+    bookings = Booking.query.filter(Booking.travel_date >= last_month).all()
+    
+    for b in bookings:
+        writer.writerow([b.id, b.user.name, b.seats, getattr(b, 'total_paid', 'N/A'), b.status, b.travel_date])
+    
+    output.seek(0)
+    csv_content = output.getvalue()
 
+    # Send to admin
+    send_email(
+        subject="Monthly Finance Report",
+        recipients=["mswakitransport@gmail.com"],
+        body="Attached is the finance report for the last month.",
+        attachments=[("finance_report.csv", csv_content)]
+    )
+
+# Schedule it
+scheduler = BackgroundScheduler()
+scheduler.add_job(send_monthly_finance_report, 'cron', day=1, hour=0, minute=0)
+scheduler.start()
 # ============================================================
 # PUBLIC ROUTES
 # ============================================================
@@ -2055,15 +2085,28 @@ def admin_bookings():
 def admin_update_booking(booking_id):
     booking = Booking.query.get_or_404(booking_id)
     action = request.form.get("action")
+
+    # Optional field for rejection reason
+    rejection_reason = request.form.get("rejection_reason")
+
     if action == "approve":
-        booking.status = "approved"
+        booking.status = "Approved"
         flash(f"Booking #{booking.id} has been approved.", "success")
+
     elif action == "reject":
-        booking.status = "rejected"
+        booking.status = "Rejected"
+        booking.rejection_reason = rejection_reason
         flash(f"Booking #{booking.id} has been rejected.", "danger")
+
     else:
         flash("Invalid action.", "warning")
+        return redirect(url_for("routes.admin_bookings"))
+
     db.session.commit()
+
+    #  Send user notification email
+    send_booking_status_email(booking, booking.user)
+
     return redirect(url_for("routes.admin_bookings"))
 
 
@@ -2118,6 +2161,7 @@ def book_vehicle():
         travel_date = datetime.strptime(travel_date_str, "%Y-%m-%d").date()
         travel_time = datetime.strptime(travel_time_str, "%H:%M").time()
 
+        # Create booking
         booking = Booking(
             user_id=current_user.id,
             seats=seats,
@@ -2130,7 +2174,23 @@ def book_vehicle():
         )
         db.session.add(booking)
         db.session.commit()
-        flash(f"Successfully booked {seats} seat(s).", "success")
+
+        # Send email to admin
+        send_email(
+            subject=f"New Booking #{booking.id} Submitted",
+            recipients=["mswakitransport@gmail.com"],  # Replace with actual admin email(s)
+            body=(
+                f"A new booking has been submitted by {current_user.name}.\n\n"
+                f"Booking ID: {booking.id}\n"
+                f"Seats: {booking.seats}\n"
+                f"Route: {booking.pickup} → {booking.destination}\n"
+                f"Date/Time: {booking.travel_date} {booking.travel_time}\n"
+                f"Reason: {booking.reason}\n\n"
+                "Please review the booking in the admin panel."
+            )
+        )
+
+        flash(f"Successfully booked {seats} seat(s). The admin has been notified.", "success")
         return redirect(url_for('routes.user_dashboard'))
 
     return render_template('book_vehicle.html')
@@ -2218,6 +2278,19 @@ def report_misbehavior():
         )
         db.session.add(report)
         db.session.commit()
+        send_email(
+        subject=f"New Misbehavior Report #{report.id}",
+        recipients=["mswakitransport@gmail.com"],  # admin email
+        body=(
+            f"A new misbehavior report has been submitted by {current_user.name}.\n\n"
+            f"Report ID: {report.id}\n"
+            f"Driver: {report.driver.name if report.driver else 'N/A'}\n"
+            f"Vehicle: {report.vehicle.plate_number if report.vehicle else 'N/A'}\n"
+            f"Description: {report.description}\n\n"
+            "Please review the report in the admin panel."
+        )
+    )
+
         flash("Your report has been submitted successfully.", "success")
         return redirect(url_for("routes.user_dashboard"))
 

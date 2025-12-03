@@ -42,7 +42,7 @@
       gap: 10px;
       font-size: 1.8rem;
       font-weight: 700;
-      color: var(--primary);
+      color: gold;
       text-decoration: none;
     }
 
@@ -199,13 +199,18 @@
     }
 
     footer {
-      text-align: center;
-      padding: 1.5rem 0;
-      background: rgba(0,0,0,0.7);
-      margin-top: 2rem;
-      color: #aaa;
-      font-size: 0.9rem;
-    }
+  position: fixed;      
+  bottom: 0;             
+  left: 0;               
+  width: 100%;           
+  text-align: center;
+  padding: 1.5rem 0;
+  background: rgba(0, 0, 0, 0.7);
+  color: #aaa;
+  font-size: 0.9rem;
+  z-index: 1000;         
+}
+
   </style>
 </head>
 <body>
@@ -291,7 +296,7 @@
   </div>
 
   <footer>
-    &copy; {{ current_year or 2025 }} Mswaki Transport — Move Smart. Move Together.
+    &copy; {{ current_year or 2025 }} Mswaki Transport.All rights reserved.
   </footer>
 
   <script>
@@ -310,7 +315,7 @@
         <p><strong>Route:</strong> ${booking.pickup} → ${booking.destination}</p>
         <p><strong>Travel Date:</strong> ${booking.travel_date ?? "N/A"}</p>
         <p><strong>Travel Time:</strong> ${booking.travel_time ?? "N/A"}</p>
-        ${booking.rejection_reason ? `<p style="background:#ffeaea;padding:10px;border-left:4px solid #d9534f;"><strong>Reason:</strong> ${booking.rejection_reason}</p>` : ''}
+        <p><strong>rejection_reason:</strong>${booking.rejection_reason ? `<p style="background:#ffeaea;padding:10px;border-left:4px solid #d9534f;"><strong>Reason:</strong> ${booking.rejection_reason}</p>` : ''}
       `;
       document.getElementById('bookingModal').classList.add('active');
     }
