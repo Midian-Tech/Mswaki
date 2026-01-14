@@ -1,42 +1,179 @@
-{% extends "base.html" %}
-{% block title %}Login — Mswaki{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mswaki Login</title>
+  <style>
+    /* Reset & base styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
 
-{% block content %}
-<main class="auth-container">
-  <section class="auth-card">
-    <div class="auth-header">
-      <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Mswaki Logo" class="auth-logo">
-      <h1>Mswaki Login</h1>
-      <p class="muted">Sign in to access your dashboard</p>
-    </div>
+    body {
+      background: linear-gradient(135deg, #4facfe, #00f2fe);
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
 
-    <!-- Flash messages -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="flash flash-{{ category }}">{{ message }}</div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
+    .auth-container {
+      width: 100%;
+      max-width: 400px;
+      padding: 20px;
+    }
 
-    <form method="POST" action="{{ url_for('routes.login') }}" class="auth-form">
-      <div class="form-group">
-        <label for="email">Email address</label>
-        <input type="email" id="email" name="email" placeholder="you@example.com" required>
+    .auth-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      padding: 30px;
+      animation: fadeIn 0.6s ease-in-out;
+    }
+
+    .auth-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .auth-logo {
+      width: 80px;
+      margin-bottom: 10px;
+    }
+
+    .auth-header h1 {
+      font-size: 1.5rem;
+      color: #333;
+    }
+
+    .auth-header p.muted {
+      color: #777;
+      font-size: 0.9rem;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+      color: #444;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      transition: border-color 0.3s;
+    }
+
+    input:focus {
+      border-color: #4facfe;
+      outline: none;
+    }
+
+    .btn {
+      display: inline-block;
+      width: 100%;
+      padding: 12px;
+      background: #4facfe;
+      color: #fff;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .btn:hover {
+      background: #00c6fb;
+    }
+
+    .muted {
+      color: #666;
+      font-size: 0.85rem;
+    }
+
+    .link {
+      color: #4facfe;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .link:hover {
+      text-decoration: underline;
+    }
+
+    .flash {
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      font-size: 0.85rem;
+    }
+
+    .flash-success {
+      background: #e6ffed;
+      color: #2d7a46;
+      border: 1px solid #2d7a46;
+    }
+
+    .flash-error {
+      background: #ffe6e6;
+      color: #a94442;
+      border: 1px solid #a94442;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <main class="auth-container">
+    <section class="auth-card">
+      <div class="auth-header">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Mswaki Logo" class="auth-logo">
+        <h1>Mswaki Login</h1>
+        <p class="muted">Sign in to access your dashboard</p>
       </div>
 
-      <div class="form-group">
-        <label for="password">Password</label>
-        <input type="password" id="password" name="password" placeholder="Enter password" required>
-      </div>
+      <!-- Flash messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
 
-      <button type="submit" class="btn btn-primary w-full">Sign In</button>
+      <form method="POST" action="{{ url_for('routes.login') }}" class="auth-form">
+        <div class="form-group">
+          <label for="email">Email address</label>
+          <input type="email" id="email" name="email" placeholder="you@example.com" required>
+        </div>
 
-      <p class="muted" style="text-align:center; margin-top:12px;">
-        Don’t have an account?
-        <a href="{{ url_for('routes.register') }}" class="link">Register here</a>
-      </p>
-    </form>
-  </section>
-</main>
-{% endblock %}
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" placeholder="Enter password" required>
+        </div>
+
+        <button type="submit" class="btn">Sign In</button>
+
+        <p class="muted" style="text-align:center; margin-top:12px;">
+          Don’t have an account?
+          <a href="{{ url_for('routes.register') }}" class="link">Register here</a>
+        </p>
+      </form>
+    </section>
+  </main>
+</body>
+</html>
